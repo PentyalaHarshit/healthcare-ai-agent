@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Healthcare Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="chat-theme">
+<div class="container chat-wrapper">
+    <div class="nav">
+        <span class="logo">🩺 AI Healthcare Assistant</span>
+        <div class="nav-links">
+            <a href="/patient-page" class="nav-link active">Chat Agent</a>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-info">
+                <h2>AI Healthcare Assistant</h2>
+                <div class="status-indicator"><span class="dot"></span> Online</div>
+            </div>
+            <button onclick="resetSession()" class="btn-reset">🔄 Reset Chat</button>
+        </div>
+        
+        <div id="chat-box" class="chat-box">
+            <div class="chat-message agent animate-fade-in">
+                <div class="bubble">
+                    Hello! I am your AI Healthcare Agent. How can I help you today? (Try typing: <i>"I need medical help"</i>)
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <input id="chat-input" placeholder="Type your message here... (e.g., 'I need medical help')" onkeydown="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()" class="btn-send">Send 🚀</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

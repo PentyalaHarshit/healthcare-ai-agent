@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body onload="loadDashboard('doctor')">
+<div class="container">
+    <div class="nav">
+        <a href="/doctor-page">Doctor Dashboard</a>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <h1>Doctor Dashboard</h1>
+    <p>Doctor can view high-risk patient cases here.</p>
+
+    <div id="dashboard"></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

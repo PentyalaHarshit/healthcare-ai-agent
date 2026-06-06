@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body onload="loadDashboard('admin')">
+<div class="container">
+    <div class="nav">
+        <a href="/admin-page">Admin Dashboard</a>
+        <a href="/patient-page">Patient Form</a>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <h1>Admin Dashboard</h1>
+    <p>Admin can manage users, doctors, appointments, and rules.</p>
+
+    <div id="dashboard"></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

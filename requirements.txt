@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+requests
+langchain-core
+scikit-learn
+pandas
+joblib
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+jinja2
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

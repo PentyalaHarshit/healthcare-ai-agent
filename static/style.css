@@ -1,0 +1,1305 @@
+/* ============================================================
+   AI Healthcare Assistant â€” Complete Stylesheet
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+/* â”€â”€ Reset & Base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1e2530;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --orange: #f97316;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* â”€â”€ Layout Containers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.chat-wrapper {
+    max-width: 860px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+}
+
+/* â”€â”€ Navbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.logo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-link {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background: var(--surface2);
+    color: #fff;
+    text-decoration: none;
+}
+
+.btn-logout {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+/* â”€â”€ Chat Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+}
+
+.chat-header h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--success);
+    font-weight: 600;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1.3);
+    }
+}
+
+.btn-reset {
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-reset:hover {
+    background: var(--surface2);
+    color: var(--text);
+}
+
+/* â”€â”€ Chat Box â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 400px;
+    max-height: 65vh;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface2) transparent;
+}
+
+.chat-box::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+    background: var(--surface2);
+    border-radius: 4px;
+}
+
+/* â”€â”€ Chat Messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.chat-message {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+}
+
+.chat-message.user {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.chat-message.agent {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.bubble {
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    word-break: break-word;
+}
+
+.chat-message.user .bubble {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-message.agent .bubble {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+}
+
+/* â”€â”€ Chat Input Area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+}
+
+.chat-input-area input,
+#chat-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.93rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.chat-input-area input:focus,
+#chat-input:focus {
+    border-color: var(--accent);
+}
+
+.chat-input-area input::placeholder,
+#chat-input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-send {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-send:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.btn-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* â”€â”€ Analysis / Report Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.analysis-report.card,
+.analysis-report {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    width: 100%;
+}
+
+.report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.report-header h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* â”€â”€ Risk Badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.risk {
+    display: inline-block;
+    padding: 5px 16px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.risk.normal {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.risk.high {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.risk.emergency {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* â”€â”€ Report Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.report-section {
+    margin-bottom: 18px;
+}
+
+.report-section h3,
+.report-section h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.collapsible {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.rag-box {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.rag-box h4 {
+    color: #93c5fd;
+}
+
+/* â”€â”€ Progress Bar (Risk Score) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.progress {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f97316, #ef4444);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    font-size: 0;
+    /* hide text inside bar */
+    min-width: 30px;
+    transition: width 0.8s ease;
+}
+
+/* Risk percent shown outside the bar */
+.risk-percent {
+    color: var(--orange);
+    font-size: 2rem;
+    font-weight: 800;
+    display: block;
+    margin-bottom: 6px;
+}
+
+/* â”€â”€ XAI / Doctor Slot Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.doctor-slots-container {
+    margin-top: 14px;
+}
+
+.doctor-slots-container h4 {
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.slot-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    transition: border-color 0.2s;
+}
+
+.slot-card:hover {
+    border-color: var(--accent);
+}
+
+.slot-card.booked-card {
+    border-color: var(--success);
+    opacity: 0.7;
+}
+
+.slot-doc {
+    font-size: 0.9rem;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.slot-time {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+/* â”€â”€ Book / Confirm Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.btn-book-slot {
+    width: 100%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.btn-book-slot:hover {
+    opacity: 0.88;
+}
+
+.btn-book-slot:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-book-slot.booked {
+    background: linear-gradient(135deg, #10b981, #059669);
+    cursor: default;
+}
+
+.confirmed-btn {
+    background: #16a34a;
+    color: white;
+    text-align: center;
+    padding: 13px;
+    border-radius: 8px;
+    margin-top: 14px;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+/* â”€â”€ Recommendation / Disclaimer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.recommendation {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    background: var(--surface2);
+    padding: 12px 14px;
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+}
+
+.disclaimer small {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.warning-text {
+    color: var(--warning);
+    font-size: 0.9rem;
+}
+
+.no-doctors-container {
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 0.9rem;
+}
+
+.suggestion-tip {
+    color: var(--accent);
+    font-size: 0.88rem;
+    margin-top: 8px;
+}
+
+/* â”€â”€ Report Page (report.html via form flow) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+body.report-body,
+body.chat-theme {
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Light report override (used when report is shown standalone) */
+.medical-report {
+    max-width: 760px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 0 18px rgba(0, 0, 0, 0.08);
+    color: #0f172a;
+}
+
+/* â”€â”€ Login / Auth Pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow);
+}
+
+.auth-card h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 24px;
+    color: #fff;
+}
+
+.auth-card input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+}
+
+.auth-card input:focus {
+    border-color: var(--accent);
+}
+
+.auth-card button {
+    width: 100%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+}
+
+.auth-card button:hover {
+    opacity: 0.88;
+}
+
+/* â”€â”€ Index / Landing Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.landing-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 30px 16px;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.landing-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+
+.landing-card h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #3b82f6, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+}
+
+.landing-card p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+}
+
+.landing-card select,
+.landing-card input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+    appearance: none;
+}
+
+.landing-card select:focus,
+.landing-card input[type="text"]:focus {
+    border-color: var(--accent);
+}
+
+.landing-card button[type="submit"] {
+    width: 100%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.landing-card button[type="submit"]:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+/* â”€â”€ Animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.35s ease forwards;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.45s ease forwards;
+}
+
+/* â”€â”€ RAG / doctor card (light standalone report) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.rag-card-light {
+    background: #f8fbff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 18px;
+    margin-top: 24px;
+    color: #0f172a;
+}
+
+.rag-card-light h3 {
+    color: #1e3a8a;
+    font-size: 1.05rem;
+}
+
+.rag-card-light p,
+.rag-card-light li {
+    color: #0f172a;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.rag-card-light ul {
+    padding-left: 20px;
+}
+
+.rag-card-light li {
+    margin: 8px 0;
+}
+
+.source-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.source-row small {
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.source-row button {
+    background: white;
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82rem;
+}
+
+.doctor-card-light {
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 18px;
+    margin-top: 18px;
+}
+
+.doctor-card-light h3 {
+    color: #047857;
+}
+
+.doctor-card-light p {
+    color: #059669;
+    font-size: 1rem;
+}
+
+/* â”€â”€ Utility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.blue-text {
+    color: #2563eb;
+    font-weight: 800;
+}
+
+.risk-badge {
+    display: inline-block;
+    background: #facc15;
+    color: #111827;
+    font-weight: 800;
+    padding: 7px 18px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.light-section {
+    margin-top: 22px;
+}
+
+.light-section h3 {
+    color: #0f172a;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.risk-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #d1d5db;
+    padding: 9px 0;
+    color: #0f172a;
+}
+
+.risk-row b {
+    color: #f97316;
+}
+
+.total-box {
+    margin-top: 14px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #f97316;
+    display: flex;
+    justify-content: space-between;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 800;
+}
+
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@media (max-width: 600px) {
+    .nav {
+        padding: 10px 14px;
+    }
+
+    .logo {
+        font-size: 0.98rem;
+    }
+
+    .chat-container {
+        margin: 8px;
+        border-radius: 10px;
+    }
+
+    .report-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .slots-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-report.card {
+        padding: 14px;
+    }
+
+    .landing-card {
+        padding: 24px 18px;
+    }
+
+    .auth-card {
+        padding: 24px 18px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REPORT PAGE  — styled version (matches screenshot)
+   White card, yellow HIGH badge, orange bar, blue RAG, green doctor
+   ══════════════════════════════════════════════════════════════ */
+
+body.report-body {
+    background: #f0f4f8;
+    color: #0f172a;
+    font-family: 'Outfit', Arial, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* ── Nav ────────────────────────────────────────────────────── */
+.rpt-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.rpt-logo {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.rpt-nav-links {
+    display: flex;
+    gap: 14px;
+}
+
+.rpt-nav-link {
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.rpt-nav-link:hover {
+    background: #eff6ff;
+}
+
+/* ── Wrapper & Card ─────────────────────────────────────────── */
+.rpt-wrapper {
+    max-width: 680px;
+    margin: 28px auto;
+    padding: 0 14px 56px;
+}
+
+.rpt-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px 30px 32px;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.09);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Title ──────────────────────────────────────────────────── */
+.rpt-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 2px;
+    line-height: 1.2;
+}
+
+/* ── Priority Badge ─────────────────────────────────────────── */
+.rpt-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    padding: 5px 14px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    margin-top: -10px;
+}
+
+.rpt-badge--normal {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.rpt-badge--high {
+    background: #fde047;
+    color: #713f12;
+}
+
+.rpt-badge--emergency {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ── Sections ───────────────────────────────────────────────── */
+.rpt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rpt-section-label {
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+/* ── Risk Score ─────────────────────────────────────────────── */
+.rpt-risk-pct {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #f97316;
+    margin: 0;
+    line-height: 1;
+}
+
+.rpt-progress {
+    width: 100%;
+    height: 11px;
+    background: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.rpt-bar {
+    height: 100%;
+    background: #f97316;
+    border-radius: 20px;
+    min-width: 6px;
+    transition: width 0.9s ease;
+}
+
+.rpt-risk-label {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* ── XAI List ───────────────────────────────────────────────── */
+.rpt-xai-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.rpt-xai-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    color: #0f172a;
+}
+
+.rpt-check {
+    margin-right: 6px;
+    font-size: 1rem;
+}
+
+.rpt-xai-name {
+    color: #0f172a;
+}
+
+.rpt-xai-pts {
+    color: #f97316;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.rpt-xai-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 13px 16px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 1rem;
+    color: #f97316;
+}
+
+/* ── Facility & Symptoms ────────────────────────────────────── */
+.rpt-facility {
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: #2563eb;
+    margin: 0;
+}
+
+.rpt-symptoms {
+    font-size: 0.92rem;
+    color: #374151;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ── RAG Card (blue tint) ───────────────────────────────────── */
+.rpt-rag-card {
+    background: #f0f7ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rpt-rag-title {
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 0;
+}
+
+.rpt-rag-intro {
+    font-size: 0.87rem;
+    color: #374151;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.rpt-rag-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rpt-rag-list li {
+    font-size: 0.88rem;
+    color: #1e293b;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.55;
+}
+
+.rpt-rag-list li::before {
+    content: '●';
+    color: #2563eb;
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    font-size: 0.62rem;
+    line-height: 1.7;
+}
+
+.rpt-sources-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rpt-sources-row small {
+    font-size: 0.76rem;
+    color: #64748b;
+}
+
+.rpt-sources-btn {
+    background: #fff;
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+    padding: 6px 13px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.rpt-sources-btn:hover {
+    background: #dbeafe;
+}
+
+/* ── Doctor Card (green tint) ───────────────────────────────── */
+.rpt-doctor-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rpt-doctor-label {
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: #047857;
+    margin: 0;
+}
+
+.rpt-doctor-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #059669;
+    margin: 0;
+}
+
+.rpt-slot-note {
+    font-size: 0.82rem;
+    color: #475569;
+    margin: 4px 0 10px;
+}
+
+/* ── Book / Confirm Button ──────────────────────────────────── */
+.rpt-book-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    letter-spacing: 0.2px;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-top: 4px;
+}
+
+.rpt-book-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.rpt-book-btn:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.rpt-book-btn--confirmed {
+    background: #16a34a;
+}
+
+/* ── Disclaimer ─────────────────────────────────────────────── */
+.rpt-disclaimer {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .rpt-card {
+        padding: 20px 16px;
+        gap: 16px;
+    }
+
+    .rpt-title {
+        font-size: 1.2rem;
+    }
+
+    .rpt-risk-pct {
+        font-size: 1.8rem;
+    }
+
+    .rpt-sources-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
