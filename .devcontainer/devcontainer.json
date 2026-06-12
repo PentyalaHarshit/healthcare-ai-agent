@@ -1,0 +1,35 @@
+{
+	"name": "Adobe Experience Manager",
+	"image": "mcr.microsoft.com/devcontainers/base:debian",
+
+	// mark the worksapce folder safe for git
+	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+
+	// 👇 Features to add to the Dev Container. More info: https://containers.dev/implementors/features.
+	"features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "configureZshAsDefaultShell": true
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "12.22.7"
+        },
+        "ghcr.io/devcontainers/features/java:1": {
+            "jdkDistro": "zulu",
+            "version": "11",
+            "installMaven": true
+        },
+        "ghcr.io/juan-ayala/devcontainer-features/aem-sdk:1": {
+            "sdksDirectory": "${containerWorkspaceFolder}/.devcontainer"
+		},
+		"ghcr.io/devcontainer-config/features/dot-config:4": {}
+    },
+
+	// 👇 Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+        4502,
+        34502,
+        4503,
+        34503,
+        8080
+    ]
+}

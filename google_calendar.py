@@ -126,3 +126,33 @@ def create_appointment_event(
             "start": start_datetime.isoformat(),
             "end": end_datetime.isoformat(),
         }
+
+
+def create_google_calendar_event(
+    patient_name: str,
+    doctor_name: str,
+    specialty: str,
+    time: str,
+    duration_minutes: int = 30
+):
+    """Adapter function for app.py compatibility.
+    Splits the 'time' string (expected format: 'YYYY-MM-DD HH:MM AM/PM') into
+    appointment_date and appointment_time for create_appointment_event.
+    """
+    try:
+        parts = time.split(" ", 1)
+        appointment_date = parts[0]
+        appointment_time = parts[1] if len(parts) > 1 else "10:00 AM"
+    except Exception:
+        appointment_date = "2026-06-09"
+        appointment_time = "10:00 AM"
+
+    return create_appointment_event(
+        patient_name=patient_name,
+        doctor_name=doctor_name,
+        specialty=specialty,
+        appointment_date=appointment_date,
+        appointment_time=appointment_time,
+        urgency="Scheduled",
+        duration_minutes=duration_minutes,
+    )

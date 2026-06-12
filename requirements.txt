@@ -1,15 +1,34 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-requests
-langchain-core
-scikit-learn
-pandas
-joblib
-python-jose[cryptography]
-passlib[bcrypt]
-python-multipart
-jinja2
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+sqlalchemy==2.0.36
+requests==2.32.3
+langchain-core==0.3.19
+scikit-learn==1.5.2
+pandas==2.2.3
+joblib==1.4.2
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.12
+jinja2==3.1.4
+google-api-python-client==2.154.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1
+# Vector RAG
+chromadb==0.5.23
+sentence-transformers==3.3.1
+# Real ML Risk Model
+xgboost==2.1.3
+lightgbm==4.5.0
+catboost==1.2.7
+# XAI / SHAP
+shap==0.46.0
+# Knowledge Graph
+networkx==3.4.2
+# Medical Image AI
+opencv-python-headless==4.10.0.84
+Pillow==11.0.0
+# Voice Agent
+openai-whisper==20240930
+# Audio processing
+soundfile==0.12.1
+numpy==1.26.4

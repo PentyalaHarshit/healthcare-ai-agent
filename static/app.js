@@ -343,3 +343,107 @@ window.addEventListener("DOMContentLoaded", () => {
     const inputElement = document.getElementById("chat-input");
     if (inputElement) inputElement.focus();
 });
+
+
+// =============================================================================
+// Voice Input — Browser MediaRecorder → /patient/voice/input
+// =============================================================================
+
+let _mediaRecorder = null;
+let _audioChunks = [];
+let _isRecording = false;
+
+async function toggleVoiceInput() {
+    if (_isRecording) {
+        stopRecording();
+    } else {
+        await startRecording();
+    }
+}
+
+async function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Your browser does not support audio recording. Please type your symptoms.");
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        _audioChunks = [];
+        _mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+        _mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) _audioChunks.push(e.data);
+        };
+
+        _mediaRecorder.onstop = async () => {
+            const blob = new Blob(_audioChunks, { type: "audio/webm" });
+            stream.getTracks().forEach(t => t.stop());
+            await uploadAudioForTranscription(blob);
+        };
+
+        _mediaRecorder.start();
+        _isRecording = true;
+
+        const voiceBtn = document.getElementById("voice-btn");
+        const voiceStatus = document.getElementById("voice-status");
+        if (voiceBtn) voiceBtn.textContent = "⏹️";
+        if (voiceStatus) voiceStatus.style.display = "block";
+
+    } catch (err) {
+        alert("Could not access microphone: " + err.message);
+    }
+}
+
+function stopRecording() {
+    if (_mediaRecorder && _isRecording) {
+        _mediaRecorder.stop();
+        _isRecording = false;
+        const voiceBtn = document.getElementById("voice-btn");
+        const voiceStatus = document.getElementById("voice-status");
+        if (voiceBtn) voiceBtn.textContent = "🎤";
+        if (voiceStatus) voiceStatus.style.display = "none";
+        appendMessage("agent", "⏳ Transcribing your voice… please wait.");
+    }
+}
+
+async function uploadAudioForTranscription(blob) {
+    const token = getToken();
+    if (!token) {
+        appendMessage("agent", "⚠️ Please log in to use voice input.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("audio", blob, "recording.webm");
+
+    try {
+        const resp = await fetch("/patient/voice/input", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData,
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            appendMessage("agent", `🎤 Transcription failed: ${data.detail || "Unknown error"}. Please type your symptoms.`);
+            return;
+        }
+
+        const transcript = data.transcript;
+        // Show transcript to user for review
+        appendMessage("agent", `🎤 I heard: <b>"${transcript}"</b><br/>Sending to healthcare agent…`);
+
+        // Auto-populate input and submit
+        const inputEl = document.getElementById("chat-input");
+        if (inputEl) {
+            inputEl.value = transcript;
+        }
+        // Small delay so user can see the transcript, then send
+        setTimeout(() => sendMessage(), 600);
+
+    } catch (err) {
+        appendMessage("agent", "🎤 Could not reach transcription service. Please type your symptoms.");
+        console.error("Voice upload error:", err);
+    }
+}

@@ -11,6 +11,7 @@
         <span class="logo">🩺 AI Healthcare Assistant</span>
         <div class="nav-links">
             <a href="/patient-page" class="nav-link active">Chat Agent</a>
+            <a href="/dashboard" class="nav-link">📊 XAI Dashboard</a>
             <button onclick="logout()" class="btn-logout">Logout</button>
         </div>
     </div>
@@ -21,20 +22,29 @@
                 <h2>AI Healthcare Assistant</h2>
                 <div class="status-indicator"><span class="dot"></span> Online</div>
             </div>
-            <button onclick="resetSession()" class="btn-reset">🔄 Reset Chat</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button onclick="resetSession()" class="btn-reset">🔄 Reset Chat</button>
+            </div>
         </div>
         
         <div id="chat-box" class="chat-box">
             <div class="chat-message agent animate-fade-in">
                 <div class="bubble">
-                    Hello! I am your AI Healthcare Agent. How can I help you today? (Try typing: <i>"I need medical help"</i>)
+                    Hello! I am your AI Healthcare Agent. How can I help you today?<br/>
+                    Type your symptoms, or <b>click 🎤 to speak</b>.
                 </div>
             </div>
         </div>
 
         <div class="chat-input-area">
-            <input id="chat-input" placeholder="Type your message here... (e.g., 'I need medical help')" onkeydown="if(event.key === 'Enter') sendMessage()">
+            <input id="chat-input" placeholder="Type your message or click 🎤 to speak…" onkeydown="if(event.key === 'Enter') sendMessage()">
+            <!-- Voice input button -->
+            <button id="voice-btn" onclick="toggleVoiceInput()" class="btn-reset" title="Speak your symptoms" style="padding:12px 14px;font-size:1.1rem;">🎤</button>
             <button onclick="sendMessage()" class="btn-send">Send 🚀</button>
+        </div>
+        <!-- Voice status indicator -->
+        <div id="voice-status" style="display:none;padding:8px 16px;font-size:0.82rem;color:#93c5fd;background:rgba(59,130,246,0.08);border-top:1px solid rgba(59,130,246,0.2);">
+            🎙️ Recording… speak your symptoms, then click 🎤 again to stop.
         </div>
     </div>
 </div>

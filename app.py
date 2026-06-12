@@ -1,11 +1,9 @@
-from fastapi import FastAPI
+from main import app
 from pydantic import BaseModel
 import requests
 
 from langchain_core.tools import tool
 from google_calendar import create_google_calendar_event
-
-app = FastAPI(title="Google + CrewAI + LangChain + MCP Healthcare App")
 
 MCP_SERVER_URL = "http://127.0.0.1:8001"
 
@@ -79,11 +77,6 @@ def report_agent(patient, analysis, doctor, calendar_event):
     }
 
 
-@app.get("/")
-def home():
-    return {"message": "Healthcare AI app running"}
-
-
 @app.post("/book-appointment")
 def book_appointment(patient: PatientRequest):
     analysis = patient_analysis_agent(patient)
@@ -103,4 +96,4 @@ def book_appointment(patient: PatientRequest):
         time=doctor["available_time"]
     )
 
-    return report_agent(patient, analysis, doctor, calendar_event)
+    return report_agent(patient, analysis, doctor, calendar_event)

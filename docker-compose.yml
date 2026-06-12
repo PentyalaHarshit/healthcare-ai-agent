@@ -22,8 +22,48 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - chroma_data:/app/chroma_db
+      - uploaded_images:/app/uploaded_images
     depends_on:
       - mcp_server
     environment:
       - MCP_SERVER_URL=http://mcp_server:8001
+      # Feature flags
+      - USE_CREW_PIPELINE=true
+      - USE_NEO4J=false
+      # Voice — set your ElevenLabs API key here or via .env
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID:-EXAVITQu4vr4xnSDxMaL}
     restart: unless-stopped
+
+  # ── ChromaDB Vector Store (port 8002) ────────────────────────
+  # Optional standalone ChromaDB — app uses embedded client by default.
+  # Uncomment to run ChromaDB as a dedicated service.
+  # chromadb:
+  #   image: chromadb/chroma:0.5.0
+  #   container_name: healthcare_chromadb
+  #   ports:
+  #     - "8002:8000"
+  #   volumes:
+  #     - chroma_data:/chroma/chroma
+  #   restart: unless-stopped
+
+  # ── Neo4j Knowledge Graph (port 7474 / 7687) ─────────────────
+  # Optional — set USE_NEO4J=true in main_app to activate.
+  # Uncomment to run Neo4j.
+  # neo4j:
+  #   image: neo4j:5.19-community
+  #   container_name: healthcare_neo4j
+  #   ports:
+  #     - "7474:7474"
+  #     - "7687:7687"
+  #   environment:
+  #     - NEO4J_AUTH=neo4j/healthcare123
+  #   volumes:
+  #     - neo4j_data:/data
+  #   restart: unless-stopped
+
+volumes:
+  chroma_data:
+  uploaded_images:
+  # neo4j_data:

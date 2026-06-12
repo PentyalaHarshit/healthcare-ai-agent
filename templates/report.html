@@ -1,184 +1,268 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>AI Healthcare - Risk Report</title>
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── Upgrade badges ── */
+        .upgrade-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+        .upg { font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:20px; }
+        .upg-blue   { background:rgba(59,130,246,0.15);  color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
+        .upg-violet { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
+        .upg-green  { background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+        .upg-orange { background:rgba(249,115,22,0.15); color:#fb923c; border:1px solid rgba(249,115,22,0.3); }
+        .upg-red    { background:rgba(239,68,68,0.15);  color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+
+        /* ── Agent pipeline strip ── */
+        .crew-strip { display:flex; gap:0; flex-wrap:wrap; margin:0 0 22px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
+        .crew-node  { flex:1; min-width:80px; padding:8px 4px; text-align:center; font-size:0.72rem; font-weight:700; color:#cbd5e1; background:rgba(30,37,48,0.8); border-right:1px solid rgba(255,255,255,0.06); }
+        .crew-node:last-child { border-right:none; }
+        .crew-node .cn-icon { font-size:1.2rem; display:block; margin-bottom:3px; }
+        .crew-node.active { background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(99,102,241,0.25)); color:#93c5fd; }
+
+        /* ── KG relationships ── */
+        .kg-box { background:rgba(139,92,246,0.07); border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:14px; }
+        .kg-box h4 { color:#a78bfa; margin-bottom:10px; }
+        .kg-rel { display:inline-block; background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.25); border-radius:6px; padding:3px 10px; font-size:0.8rem; color:#c4b5fd; margin:3px; }
+
+        /* ── ML probability bars ── */
+        .ml-box { background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px; }
+        .ml-box h4 { color:#34d399; margin-bottom:10px; }
+        .ml-row { margin-bottom:8px; }
+        .ml-label { font-size:0.82rem; color:#cbd5e1; display:flex; justify-content:space-between; margin-bottom:4px; }
+        .ml-bar-bg { height:7px; border-radius:10px; background:rgba(255,255,255,0.08); }
+        .ml-bar-fill { height:7px; border-radius:10px; transition:width 0.8s ease; }
+        .ml-high   { background:linear-gradient(90deg,#ef4444,#f97316); }
+        .ml-medium { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+        .ml-low    { background:linear-gradient(90deg,#10b981,#34d399); }
+
+        /* ── Urgency badge ── */
+        .urgency-badge { display:inline-block; padding:4px 14px; border-radius:6px; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; margin-left:8px; }
+        .urg-emergency { background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); }
+        .urg-urgent    { background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); }
+        .urg-soon      { background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); }
+        .urg-routine   { background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); }
+    </style>
 </head>
 
-<body class="chat-theme" {% if not hospital %}onload="loadReport()" {% endif %}>
-    <div class="container chat-wrapper" style="max-width: 650px;">
-        <div class="nav">
-            <span class="logo">🩺 AI Healthcare Assistant</span>
-            <div class="nav-links">
-                <a href="/" class="nav-link">Restart Flow</a>
-                <a href="/patient-page" class="nav-link">Chat Agent</a>
-            </div>
-        </div>
-
-        <div class="chat-container" style="height: auto; padding: 30px;">
-
-            {% if hospital %}
-            <div class="analysis-report card animate-slide-up"
-                style="border: none; box-shadow: none; padding: 10px; background: transparent;">
-
-                <div class="report-header" style="margin-bottom: 25px;">
-                    <h3>📋 Medical Assessment Report</h3>
-
-                    {% if priority == "Emergency" %}
-                    <div class="risk emergency">EMERGENCY</div>
-                    {% elif priority == "High" %}
-                    <div class="risk high">HIGH</div>
-                    {% else %}
-                    <div class="risk normal">NORMAL</div>
-                    {% endif %}
-                </div>
-
-                <div class="report-section" style="margin-bottom: 25px;">
-                    <h3>Cardiovascular Risk Score</h3>
-                    <div class="progress" style="margin-top: 10px;">
-                        <div class="bar" style="width: {{ risk }}%">
-                            {{ risk }}%
-                        </div>
-                    </div>
-                    <p style="color:#64748b; margin-top:8px;">Moderate to High Risk</p>
-                </div>
-
-                <div class="report-section" style="margin-bottom: 25px;">
-                    <div class="collapsible">
-                        <h4>Why Risk Is High?</h4>
-
-                        <ul style="list-style: none; padding-left: 0; margin-top: 10px;">
-                            {% for item in xai_details %}
-                            <li
-                                style="display: flex; justify-content: space-between; font-family: monospace; font-size: 1.05rem; color: #0f172a; margin-bottom: 8px;">
-                                <span> {{ item.name }}</span>
-                                <span style="color:#f97316;">+{{ item.points }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-
-                        <div
-                            style="border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 12px; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; color: #f97316;">
-                            <span>Total Risk Score</span>
-                            <span>= {{ risk }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="report-section" style="margin-bottom: 25px;">
-                    <div class="collapsible">
-                        <h4> Selected Facility:</h4>
-                        <p style="color: #2563eb; font-size: 0.95rem; font-weight: 700;">{{ hospital }}</p>
-                    </div>
-                </div>
-
-                <div class="report-section" style="margin-bottom: 25px;">
-                    <div class="collapsible">
-                        <h4> Logged Symptoms:</h4>
-                        <p style="color: #0f172a; font-size: 0.95rem;">{{ symptoms }}</p>
-                    </div>
-                </div>
-
-                <div class="report-section" style="margin-bottom: 25px;">
-                    <div class="collapsible rag-box">
-                        <h4> RAG Medical Context & Guidelines:</h4>
-
-                        <ul
-                            style="list-style-type: none; display: flex; flex-direction: column; gap: 8px; padding-left: 0; margin-top: 10px;">
-                            {% for doc in rag_medical_context %}
-                            <li style="font-size: 0.95rem; color: #0f172a; position: relative; padding-left: 20px;">
-                                <span
-                                    style="color: #2563eb; font-size: 1.2rem; position: absolute; left: 4px; top: -2px;">•</span>
-                                {{ doc }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-
-                        <p style="font-size:0.8rem; color:#64748b; margin-top:12px;">
-                            Sources: American Heart Association, Mayo Clinic, WHO
-                        </p>
-                    </div>
-                </div>
-
-                <div class="report-section" style="margin-bottom: 25px;">
-                    <div class="collapsible"
-                        style="border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.08);">
-                        <h4 style="color: #10b981;">👨‍⚕️ Assigned Doctor & Time Slot:</h4>
-
-                        <p style="color: #0f172a; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">
-                            {{ doctor }}
-                        </p>
-
-                        <span style="font-size: 0.85rem; color: #475569; display: block; margin-bottom: 12px;">
-                            ✓ This slot is reserved for your consultation. Please arrive 10 minutes early.
-                        </span>
-
-                        {% if slot_id %}
-                        <button class="btn-book-slot" onclick="bookReportSlot({{ slot_id }}, this)">
-                            Book Appointment
-                        </button>
-                        {% else %}
-                        <button class="btn-book-slot booked">
-                            Confirmed ✓
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="report-section disclaimer" style="margin-bottom: 0;">
-                    <small>⚠️ <i>Disclaimer: This is not a medical diagnosis. For emergencies, please go to the hospital
-                            immediately.</i></small>
-                </div>
-            </div>
-
-            {% else %}
-            <div id="report"></div>
-            {% endif %}
+<body class="chat-theme" {% if not hospital %}onload="loadReport()"{% endif %}>
+<div class="container chat-wrapper" style="max-width:700px;">
+    <div class="nav">
+        <span class="logo">🩺 AI Healthcare Assistant</span>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Restart</a>
+            <a href="/patient-page" class="nav-link">Chat Agent</a>
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <div class="chat-container" style="height:auto; padding:30px;">
+    {% if hospital %}
+    <div class="analysis-report card animate-slide-up" style="border:none; box-shadow:none; padding:10px; background:transparent;">
 
-    {% if slot_id %}
-    <script>
-        async function bookReportSlot(slotId, buttonElement) {
-            buttonElement.disabled = true;
-            buttonElement.textContent = "Booking...";
+        <!-- ── Header ── -->
+        <div class="report-header" style="margin-bottom:14px;">
+            <h3>📋 Medical Assessment Report</h3>
+            {% if priority == "Emergency" %}
+            <div class="risk emergency">EMERGENCY</div>
+            {% elif priority == "High" %}
+            <div class="risk high">HIGH</div>
+            {% else %}
+            <div class="risk normal">NORMAL</div>
+            {% endif %}
+        </div>
 
-            try {
-                const response = await fetch("/book", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        slot_id: slotId
-                    })
-                });
+        <!-- ── Upgrade badges ── -->
+        <div class="upgrade-row">
+            <span class="upg upg-blue">🔍 Vector RAG</span>
+            <span class="upg upg-violet">🧠 Multi-Agent Crew</span>
+            <span class="upg upg-green">🕸 Knowledge Graph</span>
+            <span class="upg upg-orange">📊 XAI Dashboard</span>
+            <span class="upg upg-red">⚡ XGBoost ML</span>
+            <span class="upg upg-blue">🎤 Voice Agent</span>
+            <span class="upg upg-violet">🖼 Medical Image AI</span>
+        </div>
 
-                const data = await response.json();
+        <!-- ── Agent Pipeline strip ── -->
+        <div class="crew-strip">
+            <div class="crew-node active"><span class="cn-icon">🔍</span>Symptom</div>
+            <div class="crew-node active"><span class="cn-icon">⚡</span>Risk</div>
+            <div class="crew-node active"><span class="cn-icon">📚</span>RAG</div>
+            <div class="crew-node active"><span class="cn-icon">🕸</span>Knowledge</div>
+            <div class="crew-node active"><span class="cn-icon">👨‍⚕️</span>Doctor</div>
+            <div class="crew-node active"><span class="cn-icon">📋</span>Report</div>
+        </div>
 
-                if (data.status === "success") {
-                    buttonElement.className = "btn-book-slot booked";
-                    buttonElement.textContent = "Confirmed ✓";
-                    buttonElement.style.backgroundColor = "#10b981";
-                } else {
-                    buttonElement.disabled = false;
-                    buttonElement.textContent = "Book Appointment";
-                    alert(`Booking failed: ${data.message}`);
-                }
-            } catch (err) {
-                console.error(err);
-                buttonElement.disabled = false;
-                buttonElement.textContent = "Book Appointment";
-                alert("Error booking appointment. Please try again.");
-            }
-        }
-    </script>
+        <!-- ── Risk Score ── -->
+        <div class="report-section" style="margin-bottom:25px;">
+            <h3>Cardiovascular Risk Score</h3>
+            <div class="progress" style="margin-top:10px;">
+                <div class="bar" style="width:{{ risk }}%">{{ risk }}%</div>
+            </div>
+            <p style="color:#64748b; margin-top:8px; font-size:0.88rem;">
+                {% if urgency %}Urgency: <strong style="color:#f97316;">{{ urgency }}</strong>{% endif %}
+            </p>
+        </div>
+
+        <!-- ── XAI / SHAP Breakdown ── -->
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="collapsible">
+                <h4>📊 XAI Dashboard — Why Risk Is High?</h4>
+                <ul style="list-style:none; padding-left:0; margin-top:10px;">
+                    {% for item in xai_details %}
+                    <li style="display:flex; justify-content:space-between; font-family:monospace; font-size:1.05rem; color:#e2e8f0; margin-bottom:10px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                            <span style="color:#f97316;">▶</span> {{ item.name }}
+                        </span>
+                        <span>
+                            <span style="color:#f97316; font-weight:700;">+{{ item.points }}</span>
+                            <span style="display:inline-block; width:{{ [item.points * 2, 120] | min }}px; height:6px; background:linear-gradient(90deg,#f97316,#ef4444); border-radius:4px; margin-left:8px; vertical-align:middle;"></span>
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div style="border-top:1px solid var(--border-color); margin-top:12px; padding-top:12px; font-weight:bold; font-size:1.1rem; display:flex; justify-content:space-between; color:#f97316;">
+                    <span>Total Risk Score</span>
+                    <span>= {{ risk }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ML Probability Bars ── -->
+        {% if ml_probabilities %}
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="ml-box">
+                <h4>⚡ XGBoost ML Risk Probabilities</h4>
+                {% if ml_probabilities.High is defined %}
+                <div class="ml-row">
+                    <div class="ml-label"><span>High Risk</span><span>{{ (ml_probabilities.High * 100) | round(1) }}%</span></div>
+                    <div class="ml-bar-bg"><div class="ml-bar-fill ml-high" style="width:{{ (ml_probabilities.High * 100) | round(1) }}%;"></div></div>
+                </div>
+                {% endif %}
+                {% if ml_probabilities.Medium is defined %}
+                <div class="ml-row">
+                    <div class="ml-label"><span>Medium Risk</span><span>{{ (ml_probabilities.Medium * 100) | round(1) }}%</span></div>
+                    <div class="ml-bar-bg"><div class="ml-bar-fill ml-medium" style="width:{{ (ml_probabilities.Medium * 100) | round(1) }}%;"></div></div>
+                </div>
+                {% endif %}
+                {% if ml_probabilities.Low is defined %}
+                <div class="ml-row">
+                    <div class="ml-label"><span>Low Risk</span><span>{{ (ml_probabilities.Low * 100) | round(1) }}%</span></div>
+                    <div class="ml-bar-bg"><div class="ml-bar-fill ml-low" style="width:{{ (ml_probabilities.Low * 100) | round(1) }}%;"></div></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Knowledge Graph ── -->
+        {% if kg_relationships %}
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="kg-box">
+                <h4>🕸 Knowledge Graph — Symptom Relationships</h4>
+                <div>
+                    {% for rel in kg_relationships %}
+                    <span class="kg-rel">{{ rel }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Facility ── -->
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="collapsible">
+                <h4>🏥 Selected Facility:</h4>
+                <p style="color:#2563eb; font-size:0.95rem; font-weight:700;">{{ hospital }}</p>
+            </div>
+        </div>
+
+        <!-- ── Symptoms ── -->
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="collapsible">
+                <h4>🩺 Logged Symptoms:</h4>
+                <p style="color:#e2e8f0; font-size:0.95rem;">{{ symptoms }}</p>
+            </div>
+        </div>
+
+        <!-- ── RAG Medical Context ── -->
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="collapsible rag-box">
+                <h4>🔍 Vector RAG — Medical Context &amp; Guidelines:</h4>
+                <ul style="list-style-type:none; display:flex; flex-direction:column; gap:8px; padding-left:0; margin-top:10px;">
+                    {% for doc in rag_medical_context %}
+                    <li style="font-size:0.93rem; color:#e2e8f0; position:relative; padding-left:20px;">
+                        <span style="color:#2563eb; font-size:1.2rem; position:absolute; left:4px; top:-2px;">•</span>
+                        {{ doc }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p style="font-size:0.8rem; color:#64748b; margin-top:12px;">
+                    Sources: ChromaDB semantic search — American Heart Association, Mayo Clinic, WHO
+                </p>
+            </div>
+        </div>
+
+        <!-- ── Doctor Slot ── -->
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="collapsible" style="border-color:rgba(16,185,129,0.2); background:rgba(16,185,129,0.08);">
+                <h4 style="color:#10b981;">👨‍⚕️ Assigned Doctor &amp; Time Slot:</h4>
+                <p style="color:#e2e8f0; font-size:1.05rem; font-weight:700; margin-bottom:8px;">{{ doctor }}</p>
+                {% if recommendation %}
+                <p style="font-size:0.88rem; color:#94a3b8; margin-bottom:12px;">💡 {{ recommendation }}</p>
+                {% endif %}
+                <span style="font-size:0.85rem; color:#475569; display:block; margin-bottom:12px;">
+                    ✓ This slot is reserved for your consultation. Please arrive 10 minutes early.
+                </span>
+                {% if slot_id %}
+                <button class="btn-book-slot" onclick="bookReportSlot({{ slot_id }}, this)">Book Appointment</button>
+                {% else %}
+                <button class="btn-book-slot booked">Confirmed ✓</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── Disclaimer ── -->
+        <div class="report-section disclaimer" style="margin-bottom:0;">
+            <small>⚠️ <i>Disclaimer: This is not a medical diagnosis. For emergencies, please call 911 or go to the nearest ER immediately.</i></small>
+        </div>
+
+    </div>
+    {% else %}
+    <div id="report"></div>
     {% endif %}
+    </div>
+</div>
 
+<script src="/static/app.js"></script>
+{% if slot_id %}
+<script>
+async function bookReportSlot(slotId, btn) {
+    btn.disabled = true;
+    btn.textContent = "Booking...";
+    try {
+        const res = await fetch("/book", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slot_id: slotId })
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+            btn.className = "btn-book-slot booked";
+            btn.textContent = "Confirmed ✓";
+            btn.style.backgroundColor = "#10b981";
+        } else {
+            btn.disabled = false;
+            btn.textContent = "Book Appointment";
+            alert("Booking failed: " + data.message);
+        }
+    } catch(e) {
+        btn.disabled = false;
+        btn.textContent = "Book Appointment";
+        alert("Error booking. Please try again.");
+    }
+}
+</script>
+{% endif %}
 </body>
-
 </html>

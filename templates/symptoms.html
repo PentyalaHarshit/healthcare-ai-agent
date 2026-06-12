@@ -3,32 +3,553 @@
 <head>
     <title>AI Healthcare - Describe Symptoms</title>
     <link rel="stylesheet" href="/static/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ── Upgrade Tabs ───────────────────────────────── */
+        .upgrade-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+        }
+        .upgrade-tab {
+            padding: 7px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .upgrade-tab:hover { border-color: var(--accent); color: #fff; }
+        .upgrade-tab.active {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        /* ── Voice Section ──────────────────────────────── */
+        .voice-panel {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .voice-panel h4 {
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .voice-panel p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+        .btn-voice {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 3px solid #3b82f6;
+            background: rgba(59,130,246,0.12);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-voice:hover { background: rgba(59,130,246,0.25); transform: scale(1.05); }
+        .btn-voice.recording {
+            border-color: #ef4444;
+            background: rgba(239,68,68,0.15);
+            animation: voicePulse 1s infinite;
+        }
+        @keyframes voicePulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+            50%      { box-shadow: 0 0 0 14px rgba(239,68,68,0); }
+        }
+        .voice-status {
+            margin-top: 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #ef4444;
+            display: none;
+        }
+        .voice-transcript {
+            margin-top: 12px;
+            background: rgba(59,130,246,0.08);
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            color: #93c5fd;
+            display: none;
+            text-align: left;
+        }
+
+        /* ── Image Upload Section ───────────────────────── */
+        .image-panel {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+        .image-panel h4 {
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .image-panel p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 14px;
+        }
+        .modality-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .modality-pill {
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .modality-pill:hover { border-color: var(--accent); color: var(--text); }
+        .modality-pill.selected {
+            background: rgba(99,102,241,0.2);
+            border-color: #6366f1;
+            color: #a5b4fc;
+        }
+        .image-dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .image-dropzone:hover, .image-dropzone.drag-over {
+            border-color: #3b82f6;
+            background: rgba(59,130,246,0.05);
+        }
+        .image-dropzone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .image-dropzone .drop-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
+        .image-dropzone .drop-label {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+        .image-dropzone .drop-label b { color: #3b82f6; }
+        .img-preview {
+            display: none;
+            margin-top: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .img-preview img { width: 100%; max-height: 200px; object-fit: contain; background:#000; display: block; }
+        .img-result {
+            display: none;
+            margin-top: 12px;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            color: #6ee7b7;
+        }
+        .img-result .img-tag {
+            display: inline-block;
+            background: rgba(16,185,129,0.15);
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin: 2px;
+            font-size: 0.78rem;
+            color: #34d399;
+        }
+        .img-uploading { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; display: none; }
+
+        /* ── Upgrade badges (small pills shown in form header) */
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+        .badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+        }
+        .badge-blue  { background: rgba(59,130,246,0.15);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-violet{ background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+        .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-orange{ background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+
+        /* Panel toggle */
+        .panel-section { display: none; }
+        .panel-section.active { display: block; }
+    </style>
 </head>
 <body class="chat-theme">
-<div class="container chat-wrapper" style="max-width: 600px;">
+<div class="container chat-wrapper" style="max-width: 620px;">
     <div class="nav">
         <span class="logo">🩺 AI Healthcare Assistant</span>
-        <span style="font-size: 0.85rem; color: #818cf8; background: rgba(129, 140, 248, 0.1); padding: 4px 10px; border-radius: 6px; font-weight: 600;">🏥 {{ hospital }}</span>
+        <span style="font-size: 0.82rem; color: #818cf8; background: rgba(129,140,248,0.1); padding: 4px 10px; border-radius: 6px; font-weight: 600;">🏥 {{ hospital }}</span>
     </div>
 
-    <div class="chat-container" style="height: auto; padding: 40px 30px;">
-        <div class="report-header" style="border: none; margin-bottom: 10px; padding: 0;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #818cf8, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Describe Your Symptoms</h2>
-        </div>
-        <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 0.95rem;">Please explain what symptoms you are experiencing (e.g. <i>"chest pain and diabetes"</i>).</p>
+    <div class="chat-container" style="height: auto; padding: 32px 28px;">
 
-        <form action="/analyze" method="post">
-            <div style="margin-bottom: 25px;">
-                <label for="symptoms" style="display: block; font-size: 0.9rem; font-weight: 600; color: #cbd5e1; margin-bottom: 10px;">Symptoms description:</label>
-                <textarea id="symptoms" name="symptoms" placeholder="Type your symptoms here..." required style="width: 100%; height: 120px; padding: 16px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: white; font-size: 0.95rem; font-family: 'Outfit'; outline: none; resize: none;"></textarea>
+        <!-- Header -->
+        <div style="margin-bottom: 18px;">
+            <h2 style="font-size: 1.45rem; font-weight: 800; background: linear-gradient(135deg, #818cf8, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">
+                Describe Your Symptoms
+            </h2>
+            <div class="badge-row">
+                <span class="badge badge-blue">🎤 Voice Agent</span>
+                <span class="badge badge-violet">🧠 Multi-Agent AI</span>
+                <span class="badge badge-green">🖼 Medical Image AI</span>
+                <span class="badge badge-orange">📊 XAI Dashboard</span>
+                <span class="badge badge-blue">🔍 Vector RAG</span>
+                <span class="badge badge-violet">⚠️ Risk ML Model</span>
+                <span class="badge badge-green">🕸 Knowledge Graph</span>
+            </div>
+        </div>
+
+        <!-- Input Mode Tabs -->
+        <div class="upgrade-tabs">
+            <button class="upgrade-tab active" onclick="switchPanel('text', this)">⌨️ Type Symptoms</button>
+            <button class="upgrade-tab" onclick="switchPanel('voice', this)">🎤 Voice Input</button>
+            <button class="upgrade-tab" onclick="switchPanel('image', this)">🖼 Medical Image</button>
+        </div>
+
+        <!-- ── TEXT PANEL ── -->
+        <div id="panel-text" class="panel-section active">
+            <form action="/analyze" method="post" id="symptom-form">
+                <div style="margin-bottom: 20px;">
+                    <label for="symptoms" style="display: block; font-size: 0.88rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">
+                        Symptoms description:
+                    </label>
+                    <textarea id="symptoms" name="symptoms" placeholder="e.g. chest pain, shortness of breath, diabetes, high blood pressure…"
+                        required style="width:100%; height:130px; padding:16px; border-radius:12px; background:rgba(15,23,42,0.6); border:1px solid var(--border-color); color:white; font-size:0.93rem; font-family:'Outfit'; outline:none; resize:vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn-send" style="width:100%; padding:16px; border-radius:12px; font-size:1rem; font-weight:700;">
+                    Run AI Diagnosis Report 🚀
+                </button>
+            </form>
+        </div>
+
+        <!-- ── VOICE PANEL ── -->
+        <div id="panel-voice" class="panel-section">
+            <div class="voice-panel">
+                <h4>🎤 Voice Input — Powered by Whisper</h4>
+                <p>Press the microphone, speak your symptoms clearly, then press stop.<br>Your words are automatically transcribed and sent to the AI.</p>
+
+                <button class="btn-voice" id="voice-btn" onclick="toggleSymptomVoice()">🎤</button>
+                <div class="voice-status" id="voice-status">● Recording… speak now</div>
+                <div class="voice-transcript" id="voice-transcript"></div>
             </div>
 
-            <button type="submit" class="btn-send" style="width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                Run AI Diagnosis Report 🚀
-            </button>
-        </form>
+            <!-- Hidden form to submit transcribed text -->
+            <form action="/analyze" method="post" id="voice-symptom-form">
+                <input type="hidden" name="symptoms" id="voice-hidden-symptoms">
+                <div id="voice-confirm-section" style="display:none; margin-top:4px;">
+                    <label style="font-size:0.88rem; font-weight:600; color:#cbd5e1; display:block; margin-bottom:6px;">
+                        Transcribed — edit if needed:
+                    </label>
+                    <textarea id="voice-edit-textarea" rows="4"
+                        style="width:100%; padding:14px; border-radius:10px; background:rgba(15,23,42,0.7); border:1px solid rgba(59,130,246,0.4); color:white; font-size:0.93rem; font-family:'Outfit'; outline:none; resize:vertical; margin-bottom:12px;"></textarea>
+                    <button type="button" class="btn-send" style="width:100%; padding:14px; border-radius:12px; font-size:1rem; font-weight:700;" onclick="submitVoiceSymptoms()">
+                        Confirm &amp; Run AI Report 🚀
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── IMAGE PANEL ── -->
+        <div id="panel-image" class="panel-section">
+            <div class="image-panel">
+                <h4>🖼 Medical Image AI — X-ray · MRI · CT · Skin</h4>
+                <p>Upload a medical scan or skin image. Our AI will analyse it and add findings to your report.</p>
+
+                <!-- Modality selector -->
+                <div class="modality-pills">
+                    <button class="modality-pill selected" data-modality="xray"  onclick="selectModality(this)">🫁 X-ray</button>
+                    <button class="modality-pill"           data-modality="mri"   onclick="selectModality(this)">🧲 MRI</button>
+                    <button class="modality-pill"           data-modality="ct"    onclick="selectModality(this)">🔬 CT Scan</button>
+                    <button class="modality-pill"           data-modality="skin"  onclick="selectModality(this)">🩹 Skin Image</button>
+                </div>
+
+                <!-- Drop zone -->
+                <div class="image-dropzone" id="img-dropzone"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="handleImgDrop(event)">
+                    <input type="file" accept="image/jpeg,image/png" id="img-file-input" onchange="handleImgSelect(event)">
+                    <span class="drop-icon">📤</span>
+                    <div class="drop-label"><b>Click to upload</b> or drag &amp; drop<br><small>JPEG / PNG · max 20 MB</small></div>
+                </div>
+
+                <div class="img-preview" id="img-preview">
+                    <img id="img-preview-img" src="" alt="Preview">
+                </div>
+                <div class="img-uploading" id="img-uploading">⏳ Analysing image…</div>
+                <div class="img-result" id="img-result"></div>
+            </div>
+
+            <!-- After image analysis, let patient also describe symptoms -->
+            <div id="img-symptom-section" style="display:none;">
+                <form action="/analyze" method="post" id="img-symptom-form">
+                    <input type="hidden" name="symptoms" id="img-hidden-symptoms">
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:0.88rem; font-weight:600; color:#cbd5e1; display:block; margin-bottom:6px;">
+                            Additional symptoms (optional):
+                        </label>
+                        <textarea id="img-extra-symptoms" rows="3"
+                            style="width:100%; padding:13px; border-radius:10px; background:rgba(15,23,42,0.6); border:1px solid var(--border-color); color:white; font-size:0.9rem; font-family:'Outfit'; outline:none; resize:none;"></textarea>
+                    </div>
+                    <button type="button" class="btn-send" style="width:100%; padding:14px; border-radius:12px; font-size:1rem; font-weight:700;" onclick="submitImageSymptoms()">
+                        Run AI Report with Image Findings 🚀
+                    </button>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<script>
+// ─── Panel switcher ────────────────────────────────────────────
+function switchPanel(name, btn) {
+    document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.upgrade-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ─── Modality selector ─────────────────────────────────────────
+let _selectedModality = 'xray';
+function selectModality(btn) {
+    document.querySelectorAll('.modality-pill').forEach(p => p.classList.remove('selected'));
+    btn.classList.add('selected');
+    _selectedModality = btn.getAttribute('data-modality');
+}
+
+// ─── Image drop / select ───────────────────────────────────────
+function handleImgDrop(e) {
+    e.preventDefault();
+    document.getElementById('img-dropzone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processImageFile(file);
+}
+function handleImgSelect(e) {
+    const file = e.target.files[0];
+    if (file) processImageFile(file);
+}
+function processImageFile(file) {
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = ev => {
+        document.getElementById('img-preview-img').src = ev.target.result;
+        document.getElementById('img-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    // Upload to backend
+    uploadMedicalImage(file);
+}
+
+async function uploadMedicalImage(file) {
+    const uploading = document.getElementById('img-uploading');
+    const resultDiv = document.getElementById('img-result');
+    const symSection = document.getElementById('img-symptom-section');
+
+    uploading.style.display = 'block';
+    resultDiv.style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('image', file, file.name);
+
+    try {
+        const resp = await fetch(`/patient/images/upload?modality=${_selectedModality}`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+        uploading.style.display = 'none';
+
+        if (!resp.ok) {
+            resultDiv.innerHTML = `<b style="color:#ef4444;">⚠️ ${data.detail || 'Analysis failed'}</b>`;
+            resultDiv.style.display = 'block';
+            // Still allow text fallback
+            symSection.style.display = 'block';
+            document.getElementById('img-hidden-symptoms').value = 'Medical image uploaded (analysis unavailable)';
+            return;
+        }
+
+        // Build tags from findings
+        const findings = data.findings || [];
+        const tagsHtml = findings.length
+            ? findings.map(f => `<span class="img-tag">${f}</span>`).join(' ')
+            : '<span class="img-tag">No abnormalities detected</span>';
+
+        const modality = data.modality || _selectedModality;
+        const confidence = data.confidence ? `${Math.round(data.confidence * 100)}%` : 'N/A';
+
+        resultDiv.innerHTML = `
+            <b style="color:#34d399; font-size:0.92rem;">✅ ${modality.toUpperCase()} Analysis Complete</b><br>
+            <div style="margin-top:6px;">${tagsHtml}</div>
+            <div style="margin-top:8px; font-size:0.8rem; color:var(--text-muted);">
+                Confidence: ${confidence} · Model: ${data.model || 'Vision AI'}
+            </div>`;
+        resultDiv.style.display = 'block';
+
+        // Pre-fill hidden field with findings for the report
+        const findingText = findings.length ? findings.join(', ') : 'no abnormalities detected';
+        document.getElementById('img-hidden-symptoms').value = `${modality} findings: ${findingText}`;
+
+        symSection.style.display = 'block';
+
+    } catch(err) {
+        uploading.style.display = 'none';
+        resultDiv.innerHTML = `<b style="color:#f59e0b;">⚠️ Could not connect to image analysis service. You can still describe symptoms manually.</b>`;
+        resultDiv.style.display = 'block';
+        symSection.style.display = 'block';
+        document.getElementById('img-hidden-symptoms').value = 'Medical image uploaded';
+    }
+}
+
+function submitImageSymptoms() {
+    const extra = document.getElementById('img-extra-symptoms').value.trim();
+    const imgSymptoms = document.getElementById('img-hidden-symptoms').value;
+    const combined = extra ? `${imgSymptoms}. ${extra}` : imgSymptoms;
+    document.getElementById('img-hidden-symptoms').value = combined;
+    document.getElementById('img-symptom-form').submit();
+}
+
+// ─── Voice recording ──────────────────────────────────────────
+let _mediaRecorder = null;
+let _audioChunks = [];
+let _isRecording = false;
+
+async function toggleSymptomVoice() {
+    if (_isRecording) {
+        stopSymptomRecording();
+    } else {
+        await startSymptomRecording();
+    }
+}
+
+async function startSymptomRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Your browser does not support audio recording. Please type your symptoms.');
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        _audioChunks = [];
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+        _mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        _mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _audioChunks.push(e.data); };
+        _mediaRecorder.onstop = async () => {
+            const blob = new Blob(_audioChunks, { type: mimeType });
+            stream.getTracks().forEach(t => t.stop());
+            await transcribeAudio(blob, mimeType);
+        };
+
+        _mediaRecorder.start();
+        _isRecording = true;
+        document.getElementById('voice-btn').classList.add('recording');
+        document.getElementById('voice-btn').textContent = '⏹️';
+        document.getElementById('voice-status').style.display = 'block';
+    } catch(err) {
+        alert('Could not access microphone: ' + err.message);
+    }
+}
+
+function stopSymptomRecording() {
+    if (_mediaRecorder && _isRecording) {
+        _mediaRecorder.stop();
+        _isRecording = false;
+        document.getElementById('voice-btn').classList.remove('recording');
+        document.getElementById('voice-btn').textContent = '🎤';
+        document.getElementById('voice-status').style.display = 'none';
+        const transcriptDiv = document.getElementById('voice-transcript');
+        transcriptDiv.style.display = 'block';
+        transcriptDiv.textContent = '⏳ Transcribing… please wait.';
+    }
+}
+
+async function transcribeAudio(blob, mimeType) {
+    const formData = new FormData();
+    const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
+    formData.append('audio', blob, `recording.${ext}`);
+
+    const transcriptDiv = document.getElementById('voice-transcript');
+
+    try {
+        const resp = await fetch('/patient/voice/input', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            // Whisper not available — show helpful fallback
+            transcriptDiv.style.display = 'block';
+            transcriptDiv.style.color = '#f59e0b';
+            transcriptDiv.textContent = '⚠️ Transcription service unavailable. Please type your symptoms in the text tab.';
+            switchPanel('text', document.querySelector('.upgrade-tab'));
+            return;
+        }
+
+        const transcript = data.transcript || '';
+        transcriptDiv.style.display = 'block';
+        transcriptDiv.style.color = '#93c5fd';
+        transcriptDiv.textContent = `🎤 Heard: "${transcript}"`;
+
+        // Populate edit area
+        document.getElementById('voice-edit-textarea').value = transcript;
+        document.getElementById('voice-confirm-section').style.display = 'block';
+
+    } catch(err) {
+        transcriptDiv.style.display = 'block';
+        transcriptDiv.style.color = '#f59e0b';
+        transcriptDiv.textContent = '⚠️ Could not reach transcription server. Please type your symptoms.';
+    }
+}
+
+function submitVoiceSymptoms() {
+    const text = document.getElementById('voice-edit-textarea').value.trim();
+    if (!text) { alert('Please speak or edit your symptoms first.'); return; }
+    document.getElementById('voice-hidden-symptoms').value = text;
+    document.getElementById('voice-symptom-form').submit();
+}
+</script>
 </body>
 </html>
