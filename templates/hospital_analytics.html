@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hospital Analytics</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        .analytics-wrap {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+        .analytics-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        .analytics-header h1 {
+            color: var(--text);
+            font-size: 1.6rem;
+            margin: 0;
+        }
+        .analytics-header p {
+            color: var(--text-muted);
+            margin: 6px 0 0;
+            font-size: 0.92rem;
+        }
+        .analytics-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .analytics-actions button,
+        .analytics-actions a {
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .metric {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .metric span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .metric strong {
+            display: block;
+            color: var(--text);
+            font-size: 1.7rem;
+            margin-top: 6px;
+        }
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .analytics-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 240px;
+        }
+        .analytics-card h2 {
+            color: var(--text);
+            font-size: 1rem;
+            margin: 0 0 12px;
+        }
+        .analytics-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .analytics-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+        .analytics-row:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+        .analytics-row small {
+            color: var(--text-muted);
+            display: block;
+            margin-top: 2px;
+        }
+        .count-pill {
+            color: #93c5fd;
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.24);
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+        .empty {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 18px 0;
+        }
+        @media (max-width: 860px) {
+            .metric-grid,
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            .analytics-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body class="chat-theme">
+    <div class="nav">
+        <span class="logo">Hospital Analytics</span>
+        <div class="nav-links">
+            <a href="/patient-page" class="nav-link">Chat Agent</a>
+            <a href="/dashboard" class="nav-link">XAI Dashboard</a>
+            <a href="/" class="nav-link">Restart</a>
+        </div>
+    </div>
+
+    <main class="analytics-wrap">
+        <section class="analytics-header">
+            <div>
+                <h1>Hospital Analytics</h1>
+                <p>PostgreSQL source of truth, ready for HDFS and Spark at scale.</p>
+            </div>
+            <div class="analytics-actions">
+                <button onclick="loadAnalytics()">Refresh</button>
+                <button onclick="loadSparkCsv()">Spark CSV Analytics</button>
+                <button onclick="exportHdfs()">Export PostgreSQL to HDFS</button>
+            </div>
+        </section>
+
+        <section class="metric-grid">
+            <div class="metric"><span>Patients</span><strong id="metric-patients">0</strong></div>
+            <div class="metric"><span>Doctors</span><strong id="metric-doctors">0</strong></div>
+            <div class="metric"><span>Appointments</span><strong id="metric-appointments">0</strong></div>
+            <div class="metric"><span>Emergency Reports</span><strong id="metric-emergency">0</strong></div>
+        </section>
+
+        <section class="analytics-grid">
+            <article class="analytics-card">
+                <h2>Most Common Disease</h2>
+                <div id="disease-list" class="analytics-list"><div class="empty">Loading...</div></div>
+            </article>
+            <article class="analytics-card">
+                <h2>Most Busy Doctor</h2>
+                <div id="doctor-list" class="analytics-list"><div class="empty">Loading...</div></div>
+            </article>
+            <article class="analytics-card">
+                <h2>Hospital Load</h2>
+                <div id="hospital-list" class="analytics-list"><div class="empty">Loading...</div></div>
+            </article>
+            <article class="analytics-card">
+                <h2>Emergency Trends</h2>
+                <div id="emergency-list" class="analytics-list"><div class="empty">Loading...</div></div>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        function rows(containerId, items, render) {
+            const el = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                el.innerHTML = '<div class="empty">No data yet</div>';
+                return;
+            }
+            el.innerHTML = items.map(render).join('');
+        }
+
+        async function loadAnalytics() {
+            const response = await fetch('/api/hospital-analytics');
+            const data = await response.json();
+            const totals = data.totals || {};
+            document.getElementById('metric-patients').textContent = totals.patients || 0;
+            document.getElementById('metric-doctors').textContent = totals.doctors || 0;
+            document.getElementById('metric-appointments').textContent = totals.appointments || 0;
+            document.getElementById('metric-emergency').textContent = totals.emergency_reports || 0;
+
+            const q = data.questions || {};
+            rows('disease-list', q.most_common_disease, item => `
+                <div class="analytics-row">
+                    <div>${item.disease || 'Unknown'}</div>
+                    <span class="count-pill">${item.count}</span>
+                </div>
+            `);
+            rows('doctor-list', q.most_busy_doctor, item => `
+                <div class="analytics-row">
+                    <div>${item.doctor || 'Unknown'}<small>${item.specialty || ''}</small></div>
+                    <span class="count-pill">${item.appointments || item.count}</span>
+                </div>
+            `);
+            rows('hospital-list', q.hospital_load, item => `
+                <div class="analytics-row">
+                    <div>${item.hospital || 'Unknown'}</div>
+                    <span class="count-pill">${item.appointments || item.count}</span>
+                </div>
+            `);
+            rows('emergency-list', q.emergency_trends, item => `
+                <div class="analytics-row">
+                    <div>${item.date || 'Unknown'}<small>${item.priority || 'Emergency'}</small></div>
+                    <span class="count-pill">${item.count}</span>
+                </div>
+            `);
+        }
+
+        async function exportHdfs() {
+            try {
+                const response = await fetch('/api/hospital-analytics/export-hdfs', { method: 'POST' });
+                const data = await response.json();
+                alert(data.status === 'success' ? `Exported to ${data.hdfs_path}` : JSON.stringify(data));
+            } catch (e) {
+                alert('HDFS export needs Spark/Hadoop services running.');
+            }
+        }
+
+        async function loadSparkCsv() {
+            try {
+                const response = await fetch('/analytics/common-diseases');
+                const diseases = await response.json();
+                rows('disease-list', diseases, item => `
+                    <div class="analytics-row">
+                        <div>${item.symptoms || 'Unknown'}</div>
+                        <span class="count-pill">${item.count}</span>
+                    </div>
+                `);
+            } catch (e) {
+                alert('Spark CSV analytics needs Spark plus /healthcare/appointments.csv in HDFS.');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadAnalytics);
+    </script>
+</body>
+</html>

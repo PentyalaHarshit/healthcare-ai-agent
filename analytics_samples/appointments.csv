@@ -1,0 +1,9 @@
+patient,symptoms,specialty,risk,hospital,doctor,priority
+Harshit,chest pain,Cardiology,95,Texas Health Frisco,Dr. Smith,Emergency
+John,headache,Neurology,40,Baylor Scott & White Plano,Dr. Nguyen,Routine
+Maya,diabetes,Endocrinology,65,Baylor Scott & White Plano,Dr. Okafor,High
+Sara,chest pain,Cardiology,90,Medical City Plano,Dr. Chen,Emergency
+David,shortness of breath,Cardiology,88,Texas Health Frisco,Dr. Johnson,Emergency
+Anika,diabetes,Endocrinology,72,Baylor Scott & White Plano,Dr. Okafor,High
+Luis,headache,Neurology,38,Texas Health Frisco,Dr. Nguyen,Routine
+Priya,chest pain,Cardiology,97,Texas Health Frisco,Dr. Patel,Emergency

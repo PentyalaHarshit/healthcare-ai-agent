@@ -13,6 +13,7 @@
 - [Getting Started](#getting-started)
   - [Local Setup](#local-setup)
   - [Docker Setup](#docker-setup)
+- [Cloud Deployment](#cloud-deployment)
 - [API Reference](#api-reference)
 - [User Roles & Credentials](#user-roles--credentials)
 - [Project Structure](#project-structure)
@@ -76,7 +77,7 @@ Doctor Selection Agent
 (specialty → available slots)
      │
      ▼
-Booking → SQLite DB
+Booking -> PostgreSQL
 ```
 
 ---
@@ -87,7 +88,7 @@ Booking → SQLite DB
 |---|---|
 | **Backend** | [FastAPI](https://fastapi.tiangolo.com/) |
 | **Server** | Uvicorn (ASGI) |
-| **Database** | SQLite + SQLAlchemy |
+| **Database** | PostgreSQL + SQLAlchemy (SQLite fallback for local development) |
 | **Auth** | JWT (python-jose) + passlib |
 | **ML** | scikit-learn, pandas, joblib |
 | **Templates** | Jinja2 |
@@ -158,6 +159,54 @@ docker-compose down
 
 ---
 
+## Cloud Deployment
+
+Production deployment assets are included for:
+
+- AWS EC2
+- Docker Compose
+- Nginx reverse proxy
+- HTTPS with Let's Encrypt / Certbot
+- PostgreSQL
+- Hadoop HDFS + Spark analytics
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the full EC2 deployment runbook.
+
+Production architecture:
+
+```text
+Browser
+  |
+  v
+Nginx
+  |
+  v
+FastAPI
+  |
+  v
+CrewAI-style agent pipeline
+  |
+  v
+RAG
+  |
+  v
+MCP
+  |
+  v
+PostgreSQL
+```
+
+Hospital analytics answers:
+
+- Most common disease
+- Most busy doctor
+- Hospital load
+- Emergency trends
+
+Open the dashboard at `/hospital-analytics`.
+
+---
+
 ## API Reference
 
 ### Authentication
@@ -209,7 +258,7 @@ POST /chat
 {
   "session_id": "abc-123",
   "router_agent": "Healthcare Agent selected",
-  "reply": "What hospital would you like to visit?"
+  "reply": "Risk: High<br>Specialty: Cardiology<br><br>Recommended Hospitals:<br>1. Medical City Plano<br>2. Baylor Scott & White Plano<br>3. Texas Health Frisco<br><br>Which hospital would you prefer?"
 }
 ```
 

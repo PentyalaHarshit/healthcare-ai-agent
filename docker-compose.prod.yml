@@ -1,0 +1,157 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: healthcare_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-healthcare}
+      POSTGRES_USER: ${POSTGRES_USER:-healthcare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-healthcare} -d ${POSTGRES_DB:-healthcare}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
+
+  mcp_server:
+    build: .
+    container_name: healthcare_mcp_server
+    command: uvicorn mcp_server:app --host 0.0.0.0 --port 8001 --proxy-headers
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-healthcare}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-healthcare}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - backend
+
+  main_app:
+    build: .
+    container_name: healthcare_main_app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-healthcare}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-healthcare}
+      MCP_SERVER_URL: http://mcp_server:8001
+      SPARK_MASTER_URL: spark://spark-master:7077
+      HDFS_ANALYTICS_PATH: hdfs://namenode:9000/healthcare
+      HADOOP_USER_NAME: root
+      USE_CREW_PIPELINE: "true"
+      USE_NEO4J: "false"
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-EXAVITQu4vr4xnSDxMaL}
+    volumes:
+      - chroma_data:/app/chroma_db
+      - uploaded_images:/app/uploaded_images
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mcp_server:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - backend
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: healthcare_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-_}
+    volumes:
+      - ./deploy/nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/certbot/www:/var/www/certbot:ro
+      - ./deploy/certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      - main_app
+    restart: unless-stopped
+    networks:
+      - backend
+
+  certbot:
+    image: certbot/certbot:v2.11.0
+    container_name: healthcare_certbot
+    volumes:
+      - ./deploy/certbot/www:/var/www/certbot
+      - ./deploy/certbot/conf:/etc/letsencrypt
+    profiles:
+      - certbot
+
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: healthcare_hdfs_namenode
+    environment:
+      CLUSTER_NAME: healthcare_analytics
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    ports:
+      - "9870:9870"
+    restart: unless-stopped
+    networks:
+      - backend
+    profiles:
+      - analytics
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: healthcare_hdfs_datanode
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      SERVICE_PRECONDITION: namenode:9870
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    restart: unless-stopped
+    networks:
+      - backend
+    profiles:
+      - analytics
+
+  spark-master:
+    image: apache/spark:3.5.8
+    container_name: healthcare_spark_master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master
+    ports:
+      - "18080:8080"
+      - "7077:7077"
+    depends_on:
+      - namenode
+    restart: unless-stopped
+    networks:
+      - backend
+    profiles:
+      - analytics
+
+  spark-worker:
+    image: apache/spark:3.5.8
+    container_name: healthcare_spark_worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_CORES: 2
+    depends_on:
+      - spark-master
+    restart: unless-stopped
+    networks:
+      - backend
+    profiles:
+      - analytics
+
+volumes:
+  postgres_data:
+  chroma_data:
+  uploaded_images:
+  hadoop_namenode:
+  hadoop_datanode:
+
+networks:
+  backend:
+    driver: bridge

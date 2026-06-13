@@ -6,31 +6,30 @@ BASE_URL = 'http://localhost:8000'
 def run_test():
     print("=== STARTING MULTI-TURN AGENT TEST ===")
 
-    # Step 1: Start chat session by asking for medical help
-    print("\n[User]: I need medical help")
+    # Step 1: Ask for the available hospitals
+    print("\n[User]: can you give the list of hospital")
     response1 = requests.post(f"{BASE_URL}/chat", json={
-        "message": "I need medical help"
+        "message": "can you give the list of hospital"
     })
     result1 = response1.json()
-    session_id = result1.get("session_id")
     print(f"[Router Agent]: {result1.get('router_agent')}")
     print(f"[Healthcare Agent]: {result1.get('reply')}")
-    print(f"(Session ID: {session_id})")
 
-    # Step 2: Select hospital
-    print("\n[User]: Texas Health Frisco")
+    # Step 2: Start chat session by describing symptoms
+    print("\n[User]: I have chest pain and diabetes")
     response2 = requests.post(f"{BASE_URL}/chat", json={
-        "session_id": session_id,
-        "message": "Texas Health Frisco"
+        "message": "I have chest pain and diabetes"
     })
     result2 = response2.json()
+    session_id = result2.get("session_id")
     print(f"[Healthcare Agent]: {result2.get('reply')}")
+    print(f"(Session ID: {session_id})")
 
-    # Step 3: Describe symptoms
-    print("\n[User]: I have chest pain and diabetes")
+    # Step 3: Select a recommended hospital
+    print("\n[User]: Texas Health Frisco")
     response3 = requests.post(f"{BASE_URL}/chat", json={
         "session_id": session_id,
-        "message": "I have chest pain and diabetes"
+        "message": "Texas Health Frisco"
     })
     result3 = response3.json()
     

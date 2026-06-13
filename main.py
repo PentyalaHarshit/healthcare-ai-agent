@@ -9,10 +9,11 @@ Upgrades wired in:
   6. Real ML Risk      (ml_risk_model.py — XGBoost/LightGBM)
   7. XAI Dashboard     (ml_risk_model.py get_shap_explanation)
 """
-import sqlite3
 import uuid
 import os
 import logging
+import json
+from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Request, Form, UploadFile, File, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, Response
@@ -42,66 +43,152 @@ BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-DB = str(BASE_DIR / "hospital.db")
 sessions: dict = {}
+
+
+@app.on_event("startup")
+def startup_database():
+    from database import init_db
+    init_db()
+
+HOSPITALS = [
+    "Texas Health Frisco",
+    "Baylor Scott & White Plano",
+    "Medical City Plano",
+    "Texas Health Plano",
+    "Children's Medical Center Plano",
+]
+
+LOCATION_HOSPITALS = {
+    "plano": [
+        "Medical City Plano",
+        "Baylor Scott & White Plano",
+        "Texas Health Frisco",
+    ],
+    "frisco": [
+        "Texas Health Frisco",
+        "Baylor Scott & White Plano",
+        "Medical City Plano",
+    ],
+}
+
+
+def now_iso() -> str:
+    return datetime.utcnow().isoformat(timespec="seconds")
+
+
+def infer_disease(symptoms: str, specialty: str | None = None) -> str:
+    text = symptoms.lower()
+    if "chest pain" in text or "shortness of breath" in text or "high blood pressure" in text or "hypertension" in text:
+        return "Cardiovascular Risk"
+    if "diabetes" in text or "blood sugar" in text:
+        return "Diabetes"
+    if "fever" in text or "cough" in text:
+        return "Respiratory Infection"
+    if "headache" in text or "dizziness" in text:
+        return "Neurological Symptoms"
+    if "stomach" in text or "nausea" in text or "vomiting" in text:
+        return "Gastrointestinal Symptoms"
+    return specialty or "General Symptoms"
+
+
+def get_or_create_patient(name: str = "Patient", location: str | None = None, history: str | None = None):
+    from database import Patient, SessionLocal
+
+    db = SessionLocal()
+    try:
+        patient = db.query(Patient).filter(Patient.name == name).first()
+        if not patient:
+            patient = Patient(name=name, location=location, medical_history=history, created_at=now_iso())
+            db.add(patient)
+            db.commit()
+            db.refresh(patient)
+        elif location or history:
+            if location:
+                patient.location = location
+            if history:
+                patient.medical_history = history
+            db.commit()
+            db.refresh(patient)
+        patient_id = patient.id
+    finally:
+        db.close()
+    return patient_id
+
+
+def save_report_record(
+    *,
+    patient_name: str,
+    hospital: str | None,
+    symptoms: str,
+    risk_score: int,
+    priority: str,
+    specialty: str,
+    recommendation: str,
+    details: dict | None = None,
+) -> None:
+    from database import Report, SessionLocal
+
+    patient_id = get_or_create_patient(patient_name)
+    db = SessionLocal()
+    try:
+        db.add(Report(
+            patient_id=patient_id,
+            patient_name=patient_name,
+            hospital=hospital,
+            symptoms=symptoms,
+            disease=infer_disease(symptoms, specialty),
+            specialty=specialty,
+            risk_score=risk_score,
+            priority=priority,
+            recommendation=recommendation,
+            details=json.dumps(details or {}, default=str),
+            generated_at=now_iso(),
+        ))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning(f"Could not save report record: {exc}")
+    finally:
+        db.close()
+
+
+def save_chat_history(session_id: str | None, message: str, response: dict) -> None:
+    if not session_id:
+        return
+
+    from database import ChatHistory, SessionLocal
+
+    reply = response.get("reply") or json.dumps({
+        key: value for key, value in response.items()
+        if key not in {"xai_details", "rag_medical_context", "kg_relationships"}
+    }, default=str)
+
+    db = SessionLocal()
+    try:
+        db.add(ChatHistory(
+            patient_id=get_or_create_patient("Patient"),
+            session_id=session_id,
+            message=message,
+            reply=reply,
+            timestamp=now_iso(),
+        ))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning(f"Could not save chat history: {exc}")
+    finally:
+        db.close()
+
+
+def finalize_chat_response(message: str, response: dict) -> dict:
+    save_chat_history(response.get("session_id"), message, response)
+    return response
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Database Setup
 # ─────────────────────────────────────────────────────────────────────────────
-def init_db():
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS doctors (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT, hospital TEXT, specialty TEXT
-        )""")
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS slots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            doctor_id INTEGER, date TEXT, time TEXT, available INTEGER
-        )""")
-    cur.execute("DELETE FROM doctors")
-    cur.execute("DELETE FROM slots")
-    for tbl in ("doctors", "slots"):
-        try:
-            cur.execute(f"DELETE FROM sqlite_sequence WHERE name='{tbl}'")
-        except sqlite3.OperationalError:
-            pass
-
-    cur.executemany(
-        "INSERT INTO doctors(id, name, hospital, specialty) VALUES (?, ?, ?, ?)",
-        [
-            (1, "Dr. Smith",  "Texas Health Frisco", "Cardiology"),
-            (2, "Dr. Kumar",  "Texas Health Frisco", "Cardiology"),
-            (3, "Dr. Lee",    "Texas Health Frisco", "Pulmonology"),
-            (4, "Dr. Brown",  "Texas Health Frisco", "General"),
-            (5, "Dr. Patel",  "Baylor Hospital",     "Cardiology"),
-            (6, "Dr. Nguyen", "Texas Health Frisco", "Neurology"),
-            (7, "Dr. Okafor", "Baylor Hospital",     "Endocrinology"),
-        ],
-    )
-    cur.executemany(
-        "INSERT INTO slots(doctor_id, date, time, available) VALUES (?, ?, ?, ?)",
-        [
-            (1, "2026-06-20", "10:00 AM", 1),
-            (1, "2026-06-20", "04:30 PM", 1),
-            (2, "2026-06-21", "09:00 AM", 1),
-            (3, "2026-06-20", "11:30 AM", 1),
-            (4, "2026-06-22", "02:00 PM", 1),
-            (5, "2026-06-20", "03:00 PM", 1),
-            (6, "2026-06-21", "01:00 PM", 1),
-            (7, "2026-06-22", "10:30 AM", 1),
-        ],
-    )
-    conn.commit()
-    conn.close()
-
-
-init_db()
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Request Models
 # ─────────────────────────────────────────────────────────────────────────────
@@ -138,23 +225,24 @@ def choose_specialty(symptoms: str) -> str:
         return "Pulmonology"
     if "headache" in s or "dizziness" in s:
         return "Neurology"
-    return "General"
+    return "General Physician"
 
 
 def get_available_doctors(hospital: str, specialty: str) -> list:
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT slots.id, doctors.name, doctors.hospital, doctors.specialty,
-               slots.date, slots.time
-        FROM doctors
-        JOIN slots ON doctors.id = slots.doctor_id
-        WHERE LOWER(doctors.hospital) = LOWER(?)
-          AND LOWER(doctors.specialty) = LOWER(?)
-          AND slots.available = 1
-    """, (hospital, specialty))
-    rows = cur.fetchall()
-    conn.close()
+    from database import SessionLocal, Doctor, Slot
+
+    db = SessionLocal()
+    try:
+        rows = db.query(
+            Slot.id, Doctor.name, Doctor.hospital, Doctor.specialty, Slot.date, Slot.time
+        ).join(Doctor, Doctor.id == Slot.doctor_id).filter(
+            Doctor.hospital.ilike(hospital),
+            Doctor.specialty.ilike(specialty),
+            Slot.available == 1,
+        ).all()
+    finally:
+        db.close()
+
     return [
         {"slot_id": r[0], "doctor_name": r[1], "hospital": r[2],
          "specialty": r[3], "date": r[4], "time": r[5]}
@@ -163,16 +251,150 @@ def get_available_doctors(hospital: str, specialty: str) -> list:
 
 
 def get_hospitals_with_specialty(specialty: str) -> list:
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT DISTINCT doctors.hospital FROM doctors
-        JOIN slots ON doctors.id = slots.doctor_id
-        WHERE LOWER(doctors.specialty) = LOWER(?) AND slots.available = 1
-    """, (specialty,))
-    rows = cur.fetchall()
-    conn.close()
+    from database import SessionLocal, Doctor, Slot
+
+    db = SessionLocal()
+    try:
+        rows = db.query(Doctor.hospital).join(
+            Slot, Doctor.id == Slot.doctor_id
+        ).filter(
+            Doctor.specialty.ilike(specialty),
+            Slot.available == 1,
+        ).distinct().all()
+    finally:
+        db.close()
+
     return [r[0] for r in rows]
+
+
+def get_hospital_reply() -> str:
+    hospital_lines = "<br>".join(f"{idx}. {name}" for idx, name in enumerate(HOSPITALS, start=1))
+    return f"<b>Available Hospitals</b><br><br>{hospital_lines}<br><br>Please select a hospital by typing its name."
+
+
+def get_location_from_message(message: str) -> str | None:
+    text = message.lower()
+    for location in LOCATION_HOSPITALS:
+        if location in text:
+            return location
+    return None
+
+
+def is_hospital_list_request(message: str) -> bool:
+    text = message.lower()
+    list_words = ("list", "available", "show", "give", "nearby", "recommend")
+    return "hospital" in text and any(word in text for word in list_words)
+
+
+def is_hospital_name(message: str) -> bool:
+    text = message.strip().lower()
+    return any(text == hospital.lower() for hospital in HOSPITALS)
+
+
+def resolve_hospital_name(message: str) -> str | None:
+    text = message.strip().lower()
+    for hospital in HOSPITALS:
+        if text == hospital.lower():
+            return hospital
+    return None
+
+
+def has_symptom_signal(message: str) -> bool:
+    text = message.lower()
+    symptom_words = (
+        "i have", "i am having", "symptom", "pain", "fever", "diabetes",
+        "chest", "breathing", "shortness of breath", "headache", "dizziness",
+        "cough", "blood pressure", "hypertension", "rash", "stomach",
+    )
+    return any(word in text for word in symptom_words)
+
+
+def risk_priority(risk_score: int) -> tuple[str, str]:
+    if risk_score >= 90:
+        return "Emergency", "Seek emergency care immediately."
+    if risk_score >= 60:
+        return "High", "Schedule an urgent appointment."
+    return "Normal", "Schedule a routine consultation."
+
+
+def recommend_hospitals(specialty: str, location: str | None = "plano") -> list:
+    available = get_hospitals_with_specialty(specialty)
+    if not available:
+        available = HOSPITALS
+
+    preferred = LOCATION_HOSPITALS.get((location or "").lower(), HOSPITALS)
+    ranked = [hospital for hospital in preferred if hospital in available]
+    ranked.extend(hospital for hospital in available if hospital not in ranked)
+    ranked.extend(hospital for hospital in HOSPITALS if hospital not in ranked)
+    return ranked[:3]
+
+
+def format_recommended_hospitals(hospitals: list[str]) -> str:
+    return "<br>".join(f"{idx}. {name}" for idx, name in enumerate(hospitals, start=1))
+
+
+def format_doctor_recommendation(hospital: str, specialty: str, doctors: list) -> str:
+    specialty_labels = {
+        "Cardiology": "Cardiologists",
+        "Pulmonology": "Pulmonologists",
+        "Neurology": "Neurologists",
+        "Endocrinology": "Endocrinologists",
+        "Pediatrics": "Pediatricians",
+        "General": "General Physicians",
+        "General Physician": "General Physicians",
+    }
+    specialty_label = specialty_labels.get(specialty, f"{specialty} doctors")
+    if not doctors:
+        return (
+            f"<b>{hospital}</b><br><br>"
+            f"No available {specialty_label} were found at this hospital right now."
+        )
+
+    doctor_lines = "<br>".join(f"- {doctor['doctor_name']}" for doctor in doctors)
+    slot_lines = "<br>".join(f"{doctor['time']}" for doctor in doctors)
+    return (
+        f"<b>{hospital}</b><br><br>"
+        f"<b>Available {specialty_label} ({len(doctors)}):</b><br>{doctor_lines}<br><br>"
+        f"<b>Available Slots:</b><br>{slot_lines}"
+    )
+
+
+def get_chat_xai_details(symptoms: str, age: int = 55) -> list:
+    details = []
+    s = symptoms.lower()
+    if "chest pain" in s:
+        details.append({"name": "Chest Pain", "points": 40})
+    if "shortness of breath" in s or "breathing" in s:
+        details.append({"name": "Shortness of Breath", "points": 30})
+    if "high bp" in s or "blood pressure" in s:
+        details.append({"name": "High Blood Pressure", "points": 20})
+    if "hypertension" in s:
+        details.append({"name": "Hypertension", "points": 15})
+    if "diabetes" in s:
+        details.append({"name": "Diabetes", "points": 25})
+    if "fever" in s:
+        details.append({"name": "Fever", "points": 15})
+    if age >= 60:
+        details.append({"name": f"Age ({age})", "points": 10})
+    return details
+
+
+def analyze_symptoms_for_chat(symptoms: str) -> dict:
+    risk_score = risk_prediction_model(symptoms)
+    specialty = choose_specialty(symptoms)
+    priority, recommendation = risk_priority(risk_score)
+    return {
+        "symptoms": symptoms,
+        "risk_score": risk_score,
+        "priority": priority,
+        "recommended_specialty": specialty,
+        "recommendation": recommendation,
+        "xai_explanation": [],
+        "xai_details": get_chat_xai_details(symptoms),
+        "rag_medical_context": _rag_fallback(symptoms),
+        "kg_relationships": [],
+        "disclaimer": "This is not a medical diagnosis. For emergencies, call 911.",
+    }
 
 
 def rag_agent(query: str) -> list:
@@ -259,6 +481,53 @@ def patient_dashboard(current_user=Depends(require_roles(["patient", "admin"])))
 @app.get("/admin-dashboard")
 def admin_dashboard(current_user=Depends(require_roles(["admin"]))):
     return {"message": "Admin dashboard access granted", "user": current_user}
+
+
+@app.get("/hospital-analytics", response_class=HTMLResponse)
+def hospital_analytics_page(request: Request):
+    return templates.TemplateResponse(request=request, name="hospital_analytics.html")
+
+
+@app.get("/api/hospital-analytics")
+def api_hospital_analytics():
+    from hospital_analytics import get_hospital_analytics
+    return get_hospital_analytics()
+
+
+@app.post("/api/hospital-analytics/export-hdfs")
+def api_export_hospital_analytics_to_hdfs():
+    from hospital_analytics import export_postgres_to_hdfs
+    return export_postgres_to_hdfs()
+
+
+@app.get("/api/hospital-analytics/spark")
+def api_hospital_analytics_spark():
+    from hospital_analytics import run_spark_hdfs_analytics
+    return run_spark_hdfs_analytics()
+
+
+@app.get("/analytics/common-diseases")
+def analytics_common_diseases():
+    from hospital_analytics import common_diseases_from_hdfs
+    return common_diseases_from_hdfs()
+
+
+@app.get("/analytics/busy-doctors")
+def analytics_busy_doctors():
+    from hospital_analytics import busy_doctors_from_hdfs
+    return busy_doctors_from_hdfs()
+
+
+@app.get("/analytics/hospital-load")
+def analytics_hospital_load():
+    from hospital_analytics import hospital_load_from_hdfs
+    return hospital_load_from_hdfs()
+
+
+@app.get("/analytics/emergency-trends")
+def analytics_emergency_trends():
+    from hospital_analytics import emergency_trends_from_hdfs
+    return emergency_trends_from_hdfs()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -361,7 +630,7 @@ def knowledge_graph_query(symptoms: str = "", history: str = ""):
 async def analyze(request: Request, symptoms: str = Form(...)):
     """
     Full upgraded pipeline:
-    symptoms → 6-agent crew → XAI report
+    symptoms → 6-agent crew → XAI report → Multi-LLM verification
     """
     from crew_agents import run_healthcare_crew
     from ml_risk_model import predict_ml_risk, get_shap_explanation
@@ -400,9 +669,9 @@ async def analyze(request: Request, symptoms: str = Form(...)):
         doctor = f"{doctors[0]['doctor_name']} ({doctors[0]['specialty']}) at {doctors[0]['time']} ({doctors[0]['date']})"
         slot_id = doctors[0]["slot_id"]
     else:
-        fallback = get_available_doctors(hospital, "General")
+        fallback = get_available_doctors(hospital, "General Physician")
         if fallback:
-            doctor = f"{fallback[0]['doctor_name']} (General - Fallback) at {fallback[0]['time']} ({fallback[0]['date']})"
+            doctor = f"{fallback[0]['doctor_name']} (General Physician - Fallback) at {fallback[0]['time']} ({fallback[0]['date']})"
             slot_id = fallback[0]["slot_id"]
         else:
             doctor = "No doctors available at this time."
@@ -420,6 +689,22 @@ async def analyze(request: Request, symptoms: str = Form(...)):
         ml_probs = ml_result.get("probabilities", {})
     except Exception:
         ml_probs = {}
+
+    save_report_record(
+        patient_name="Patient",
+        hospital=hospital,
+        symptoms=symptoms,
+        risk_score=risk,
+        priority=priority,
+        specialty=specialty,
+        recommendation=crew_report.get("recommendation", ""),
+        details={
+            "xai_details": xai_details,
+            "rag_context": rag_context,
+            "kg_relationships": kg_relationships,
+            "ml_probabilities": ml_probs,
+        },
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -442,42 +727,68 @@ async def analyze(request: Request, symptoms: str = Form(...)):
     )
 
 
+@app.get("/api/multi-llm-verify")
+def api_multi_llm_verify(symptoms: str = Query(...), history: str = "", age: int = 55):
+    """
+    Direct API endpoint to run parallel Multi-LLM Triage Consensus Verification.
+    """
+    try:
+        from multi_llm_verifier import run_multi_llm_verification
+        return run_multi_llm_verification(symptoms, history, age)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Booking
 # ─────────────────────────────────────────────────────────────────────────────
 @app.post("/book")
 def book_appointment(data: BookRequest):
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT slots.id, doctors.name, doctors.hospital, doctors.specialty,
-               slots.date, slots.time
-        FROM doctors
-        JOIN slots ON doctors.id = slots.doctor_id
-        WHERE slots.id = ? AND slots.available = 1
-    """, (data.slot_id,))
-    row = cur.fetchone()
-    if not row:
-        conn.close()
-        return {"status": "failed", "message": "Slot not available or does not exist"}
+    from database import SessionLocal, Doctor, Slot
 
-    cur.execute("UPDATE slots SET available = 0 WHERE id = ? AND available = 1", (data.slot_id,))
-    conn.commit()
-    updated = cur.rowcount
-    conn.close()
+    db = SessionLocal()
+    try:
+        row = db.query(
+            Slot, Doctor.id, Doctor.name, Doctor.hospital, Doctor.specialty, Slot.date, Slot.time
+        ).join(Doctor, Doctor.id == Slot.doctor_id).filter(
+            Slot.id == data.slot_id,
+            Slot.available == 1,
+        ).first()
 
-    if updated == 0:
-        return {"status": "failed", "message": "Slot not available"}
+        if not row:
+            return {"status": "failed", "message": "Slot not available or does not exist"}
+
+        slot, doctor_id, doctor_name, hospital, specialty, appointment_date, appointment_time = row
+        slot.available = 0
+        from database import Appointment
+        db.add(Appointment(
+            patient_id=get_or_create_patient("Patient"),
+            doctor_id=doctor_id,
+            patient_name="Patient",
+            doctor_name=doctor_name,
+            hospital=hospital,
+            specialty=specialty,
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
+            symptoms=None,
+            urgency="Scheduled",
+            status="Confirmed",
+            created_at=now_iso(),
+        ))
+        db.commit()
+    finally:
+        db.close()
 
     # Create calendar event
     try:
         from google_calendar import create_appointment_event
         calendar_event = create_appointment_event(
             patient_name="Patient",
-            doctor_name=row[1],
-            specialty=row[3],
-            appointment_date=row[4],
-            appointment_time=row[5],
+            doctor_name=doctor_name,
+            specialty=specialty,
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
             urgency="Scheduled",
         )
     except Exception as e:
@@ -504,57 +815,94 @@ def router_agent(message: str) -> str:
 def healthcare_agent(session_id: str, message: str) -> dict:
     session = sessions[session_id]
 
-    if session["step"] == "ask_hospital":
-        session["hospital"] = message
-        session["step"] = "ask_symptoms"
+    if is_hospital_list_request(message):
+        location = get_location_from_message(message)
+        if location:
+            nearby = LOCATION_HOSPITALS[location]
+            hospital_lines = "<br>".join(f"- {hospital}" for hospital in nearby)
+            return {"session_id": session_id, "agent": "Healthcare Agent",
+                    "reply": f"<b>Location: {location.title()}</b><br><br><b>Nearby Hospitals:</b><br>{hospital_lines}<br><br>Please select a hospital by typing its name."}
         return {"session_id": session_id, "agent": "Healthcare Agent",
-                "reply": "Please describe your symptoms."}
+                "reply": get_hospital_reply()}
 
     if session["step"] == "ask_symptoms":
-        session["symptoms"] = message
-        session["step"] = "completed"
-        hospital = session["hospital"]
-        symptoms = message
+        analysis = analyze_symptoms_for_chat(message)
+        location = get_location_from_message(message) or session.get("location") or "plano"
+        hospitals = recommend_hospitals(analysis["recommended_specialty"], location)
+        session.update({
+            "step": "ask_hospital",
+            "symptoms": message,
+            "analysis": analysis,
+            "recommended_hospitals": hospitals,
+            "location": location,
+        })
 
-        try:
-            from crew_agents import run_healthcare_crew
-            crew = run_healthcare_crew(symptoms, "", "Patient")
-            risk_score = int(crew.get("risk_score", risk_prediction_model(symptoms)))
-        except Exception:
-            risk_score = risk_prediction_model(symptoms)
-            crew = {}
+        save_report_record(
+            patient_name="Patient",
+            hospital=None,
+            symptoms=message,
+            risk_score=analysis["risk_score"],
+            priority=analysis["priority"],
+            specialty=analysis["recommended_specialty"],
+            recommendation=analysis["recommendation"],
+            details={"source": "chat"},
+        )
 
-        if risk_score >= 90:   priority, recommendation = "Emergency", "Seek emergency care immediately."
-        elif risk_score >= 60: priority, recommendation = "High", "Schedule an urgent appointment."
-        else:                  priority, recommendation = "Normal", "Schedule a routine consultation."
-
-        specialty = crew.get("recommended_specialty") or choose_specialty(symptoms)
-        doctors = get_available_doctors(hospital, specialty)
-        xai_details = get_xai_details(symptoms)
-        rag_context = rag_agent(symptoms)
-
-        res = {
+        return {
             "session_id": session_id,
             "agent": "Healthcare Agent",
-            "hospital": hospital,
-            "symptoms": symptoms,
-            "risk_score": risk_score,
-            "priority": priority,
-            "recommended_specialty": specialty,
-            "xai_explanation": crew.get("xai_analysis", {}).get("xai_explanation", []),
-            "xai_details": xai_details,
-            "rag_medical_context": rag_context,
-            "available_doctors": doctors,
-            "recommendation": recommendation,
-            "kg_relationships": crew.get("kg_relationships", []),
-            "disclaimer": "This is not a medical diagnosis. For emergencies, call 911.",
+            "reply": (
+                f"<b>Risk:</b> {analysis['priority']}<br>"
+                f"<b>Specialty:</b> {analysis['recommended_specialty']}<br><br>"
+                f"<b>Recommended Hospitals:</b><br>"
+                f"{format_recommended_hospitals(hospitals)}<br><br>"
+                "Which hospital would you prefer?"
+            ),
+            **analysis,
+            "recommended_hospitals": hospitals,
         }
 
-        if not doctors:
-            alt = [h for h in get_hospitals_with_specialty(specialty) if h.lower() != hospital.lower()]
-            res["suggested_hospitals"] = alt
+    if session["step"] == "ask_hospital":
+        hospital = resolve_hospital_name(message)
+        if not hospital:
+            return {"session_id": session_id, "agent": "Healthcare Agent",
+                    "reply": f"I could not match that hospital. Please choose one of these:<br><br>{format_recommended_hospitals(session.get('recommended_hospitals') or HOSPITALS)}"}
 
-        return res
+        analysis = session.get("analysis") or analyze_symptoms_for_chat(session.get("symptoms", ""))
+        specialty = analysis["recommended_specialty"]
+        doctors = get_available_doctors(hospital, specialty)
+        session.update({"step": "ask_appointment", "hospital": hospital, "available_doctors": doctors})
+
+        reply = format_doctor_recommendation(hospital, specialty, doctors)
+        if doctors:
+            reply += "<br><br>Please choose a slot to book your appointment."
+        else:
+            alternatives = [h for h in recommend_hospitals(specialty, session.get("location")) if h.lower() != hospital.lower()]
+            session["recommended_hospitals"] = alternatives
+            reply += f"<br><br>Other recommended hospitals:<br>{format_recommended_hospitals(alternatives)}"
+
+        return {
+            "session_id": session_id,
+            "agent": "Healthcare Agent",
+            "reply": reply,
+            "hospital": hospital,
+            **analysis,
+            "available_doctors": doctors,
+            "suggested_hospitals": [h for h in recommend_hospitals(specialty, session.get("location")) if h.lower() != hospital.lower()],
+        }
+
+    if session["step"] == "ask_appointment":
+        hospital = session.get("hospital")
+        analysis = session.get("analysis") or {}
+        doctors = session.get("available_doctors") or []
+        return {
+            "session_id": session_id,
+            "agent": "Healthcare Agent",
+            "reply": format_doctor_recommendation(hospital, analysis.get("recommended_specialty", "General"), doctors),
+            "hospital": hospital,
+            **analysis,
+            "available_doctors": doctors,
+        }
 
     return {"session_id": session_id,
             "reply": "Session completed. Start a new session for another request."}
@@ -568,13 +916,18 @@ def chat(data: ChatRequest):
         session_id = str(uuid.uuid4())
         route = router_agent(message)
         if route == "healthcare":
-            sessions[session_id] = {"route": "healthcare", "step": "ask_hospital",
-                                     "hospital": None, "symptoms": None}
-            return {"session_id": session_id, "router_agent": "Healthcare Agent selected",
-                    "reply": "What hospital would you like to visit?"}
+            location = get_location_from_message(message)
+            sessions[session_id] = {"route": "healthcare", "step": "ask_symptoms",
+                                     "hospital": None, "symptoms": None, "location": location}
+            if is_hospital_list_request(message):
+                return finalize_chat_response(message, healthcare_agent(session_id, message) | {"router_agent": "Healthcare Agent selected"})
+            if has_symptom_signal(message):
+                return finalize_chat_response(message, healthcare_agent(session_id, message) | {"router_agent": "Healthcare Agent selected"})
+            return finalize_chat_response(message, {"session_id": session_id, "router_agent": "Healthcare Agent selected",
+                    "reply": "Please describe your symptoms so I can analyze your risk and recommend the right hospital."})
         sessions[session_id] = {"route": "general", "step": "general_chat"}
-        return {"session_id": session_id, "router_agent": "General Agent selected",
-                "reply": "General answer: Please ask your question."}
+        return finalize_chat_response(message, {"session_id": session_id, "router_agent": "General Agent selected",
+                "reply": "General answer: Please ask your question."})
 
     session_id = data.session_id
     if session_id not in sessions:
@@ -582,17 +935,20 @@ def chat(data: ChatRequest):
 
     if sessions[session_id]["route"] == "general":
         if router_agent(message) == "healthcare":
-            sessions[session_id] = {"route": "healthcare", "step": "ask_hospital",
-                                     "hospital": None, "symptoms": None}
-            return {"session_id": session_id, "router_agent": "Healthcare Agent selected",
-                    "reply": "What hospital would you like to visit?"}
-        return {"session_id": session_id,
-                "reply": "I'm here to help with medical bookings. Describe symptoms to begin."}
+            sessions[session_id] = {"route": "healthcare", "step": "ask_symptoms",
+                                     "hospital": None, "symptoms": None,
+                                     "location": get_location_from_message(message)}
+            if is_hospital_list_request(message) or has_symptom_signal(message):
+                return finalize_chat_response(message, healthcare_agent(session_id, message) | {"router_agent": "Healthcare Agent selected"})
+            return finalize_chat_response(message, {"session_id": session_id, "router_agent": "Healthcare Agent selected",
+                    "reply": "Please describe your symptoms so I can analyze your risk and recommend the right hospital."})
+        return finalize_chat_response(message, {"session_id": session_id,
+                "reply": "I'm here to help with medical bookings. Describe symptoms to begin."})
 
     if sessions[session_id]["route"] == "healthcare":
-        return healthcare_agent(session_id, message)
+        return finalize_chat_response(message, healthcare_agent(session_id, message))
 
-    return {"reply": "General agent response"}
+    return finalize_chat_response(message, {"session_id": session_id, "reply": "General agent response"})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -623,4 +979,3 @@ async def get_hospital(request: Request):
 async def get_analyze(request: Request):
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/")
-

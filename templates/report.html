@@ -43,6 +43,147 @@
         .urg-urgent    { background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); }
         .urg-soon      { background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); }
         .urg-routine   { background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); }
+
+        /* ── Multi-LLM Verification consensus styles ── */
+        .consensus-box {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.22);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
+        }
+        .consensus-box h4 {
+            color: #a5b4fc;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 500px) {
+            .model-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .model-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .model-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(30, 41, 59, 0.7);
+        }
+        .model-card.active-model {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.12);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+        }
+        .model-name {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .model-mode-badge {
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 8px;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+        }
+        .mode-live {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .mode-sim {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+        .vote-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .explain-pane {
+            background: rgba(15, 23, 42, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            display: none;
+        }
+        .explain-pane.active-pane {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        .think-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid #818cf8;
+            font-family: monospace;
+            padding: 12px;
+            margin-bottom: 12px;
+            color: #94a3b8;
+            border-radius: 4px;
+            font-size: 0.84rem;
+            white-space: pre-wrap;
+        }
+        .verified-banner {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.08));
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 20px;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.05);
+        }
+        .verified-banner h5 {
+            color: #34d399;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.online {
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.offline {
+            background: #fb923c;
+            box-shadow: 0 0 8px #fb923c;
+        }
     </style>
 </head>
 
@@ -73,7 +214,7 @@
         </div>
 
         <!-- ── Upgrade badges ── -->
-        <div class="upgrade-row">
+        <div class="upgrade-row" style="display:none;">
             <span class="upg upg-blue">🔍 Vector RAG</span>
             <span class="upg upg-violet">🧠 Multi-Agent Crew</span>
             <span class="upg upg-green">🕸 Knowledge Graph</span>
@@ -81,6 +222,7 @@
             <span class="upg upg-red">⚡ XGBoost ML</span>
             <span class="upg upg-blue">🎤 Voice Agent</span>
             <span class="upg upg-violet">🖼 Medical Image AI</span>
+            <span class="upg upg-green">🛡️ Multi-LLM Triage</span>
         </div>
 
         <!-- ── Agent Pipeline strip ── -->
@@ -169,6 +311,89 @@
         </div>
         {% endif %}
 
+        <!-- ── Multi-LLM Medical Verification Consensus ── -->
+        {% if false and multi_llm_report %}
+        <div class="report-section" style="margin-bottom:25px;">
+            <div class="consensus-box">
+                <h4>
+                    <span>🗳️ Multi-LLM Verification Consensus</span>
+                    <span style="font-size: 0.76rem; font-weight: normal; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                        {% if multi_llm_report.live_mode %}
+                        <span class="status-dot online"></span> Live Verification ({{ multi_llm_report.live_models_count }}/{{ multi_llm_report.predictions | length }} live)
+                        {% else %}
+                        <span class="status-dot offline"></span> Simulation Mode
+                        {% endif %}
+                    </span>
+                </h4>
+                
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.5;">
+                    Symptom analysis executed in parallel across clinical AI models. Decisions are aggregated via majority vote.
+                </p>
+
+                <!-- Model Grid -->
+                <div class="model-grid">
+                    {% for mkey, pred in multi_llm_report.predictions.items() %}
+                    <div class="model-card {% if loop.first %}active-model{% endif %}" id="card-{{ mkey }}" onclick="selectModelExplain('{{ mkey }}')">
+                        <div class="model-name">{{ mkey }}</div>
+                        <div class="model-mode-badge {% if pred.mode == 'live' %}mode-live{% else %}mode-sim{% endif %}">
+                            {{ pred.mode | upper }}
+                        </div>
+                        <div style="margin-top: 4px;">
+                            <span class="vote-badge {% if pred.urgency == 'Emergency' %}urg-emergency{% elif pred.urgency == 'Urgent' %}urg-urgent{% elif pred.urgency == 'Soon' %}urg-soon{% else %}urg-routine{% endif %}">
+                                {{ pred.urgency }}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">
+                            {{ pred.specialty }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Explanation Panes -->
+                {% for mkey, pred in multi_llm_report.predictions.items() %}
+                <div class="explain-pane {% if loop.first %}active-pane{% endif %}" id="pane-{{ mkey }}">
+                    <h5 style="color: #fff; font-size: 0.85rem; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Clinical Explanation from {{ mkey | upper }} ({{ pred.specialty }} Specialist Triage)
+                    </h5>
+                    {% if pred.think %}
+                    <div class="think-block">{{ pred.think }}</div>
+                    {% endif %}
+                    <div style="color: #cbd5e1; font-size: 0.9rem; white-space: pre-line;">{{ pred.explanation }}</div>
+                </div>
+                {% endfor %}
+
+                <!-- Verified Banner -->
+                <div class="verified-banner">
+                    <h5>🛡️ Verified Medical Answer (Consensus Outcome)</h5>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                        <span>Urgency Consensus: 
+                            <span class="urgency-badge {% if multi_llm_report.consensus.consensus_urgency == 'Emergency' %}urg-emergency{% elif multi_llm_report.consensus.consensus_urgency == 'Urgent' %}urg-urgent{% elif multi_llm_report.consensus.consensus_urgency == 'Soon' %}urg-soon{% else %}urg-routine{% endif %}" style="margin-left: 4px;">
+                                {{ multi_llm_report.consensus.consensus_urgency }}
+                            </span>
+                        </span>
+                        <span>Specialty Consensus: <strong style="color:#818cf8;">{{ multi_llm_report.consensus.consensus_specialty }}</strong></span>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.4); border-radius: 6px; padding: 14px; font-size: 0.92rem; color: #fff; border: 1px solid rgba(255,255,255,0.03); white-space: pre-line; line-height: 1.6;">
+                        {{ multi_llm_report.consensus.verified_explanation }}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; display: flex; gap: 16px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                        <span>Urgency Votes: 
+                            {% for u, votes in multi_llm_report.consensus.urgency_votes.items() %}
+                            <strong>{{ u }}</strong> ({{ votes }}){% if not loop.last %} · {% endif %}
+                            {% endfor %}
+                        </span>
+                        <span>Specialty Votes: 
+                            {% for s, votes in multi_llm_report.consensus.specialty_votes.items() %}
+                            <strong>{{ s }}</strong> ({{ votes }}){% if not loop.last %} · {% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- ── Facility ── -->
         <div class="report-section" style="margin-bottom:25px;">
             <div class="collapsible">
@@ -235,6 +460,15 @@
 </div>
 
 <script src="/static/app.js"></script>
+<script>
+function selectModelExplain(modelKey) {
+    document.querySelectorAll('.model-card').forEach(card => card.classList.remove('active-model'));
+    document.querySelectorAll('.explain-pane').forEach(pane => pane.classList.remove('active-pane'));
+    
+    document.getElementById('card-' + modelKey).classList.add('active-model');
+    document.getElementById('pane-' + modelKey).classList.add('active-pane');
+}
+</script>
 {% if slot_id %}
 <script>
 async function bookReportSlot(slotId, btn) {

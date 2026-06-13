@@ -32,3 +32,6 @@ openai-whisper==20240930
 # Audio processing
 soundfile==0.12.1
 numpy==1.26.4
+# Database and Spark Analytics
+psycopg2-binary==2.9.9
+pyspark==3.5.0

@@ -124,23 +124,16 @@ def knowledge_agent(symptoms_text: str, history_text: str) -> dict:
 # ── Agent 5: Doctor Agent ─────────────────────────────────────────────────────
 def doctor_agent(specialty: str) -> dict:
     """Select best available doctor for the given specialty."""
-    import sqlite3
-    from pathlib import Path
+    from database import SessionLocal, Doctor, Slot
 
-    db_path = str(Path(__file__).resolve().parent / "hospital.db")
+    db = SessionLocal()
     try:
-        conn = sqlite3.connect(db_path)
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT slots.id, doctors.name, doctors.hospital, doctors.specialty,
-                   slots.date, slots.time
-            FROM doctors
-            JOIN slots ON doctors.id = slots.doctor_id
-            WHERE LOWER(doctors.specialty) = LOWER(?) AND slots.available = 1
-            LIMIT 3
-        """, (specialty,))
-        rows = cur.fetchall()
-        conn.close()
+        rows = db.query(
+            Slot.id, Doctor.name, Doctor.hospital, Doctor.specialty, Slot.date, Slot.time
+        ).join(Doctor, Doctor.id == Slot.doctor_id).filter(
+            Doctor.specialty.ilike(specialty),
+            Slot.available == 1
+        ).limit(3).all()
 
         doctors = [
             {"slot_id": r[0], "doctor_name": r[1], "hospital": r[2],
@@ -156,6 +149,8 @@ def doctor_agent(specialty: str) -> dict:
     except Exception as e:
         return {"agent": "Doctor Agent", "specialty": specialty,
                 "available_doctors": [], "doctor_found": False, "error": str(e)}
+    finally:
+        db.close()
 
 
 # ── Agent 6: Report Agent ─────────────────────────────────────────────────────
