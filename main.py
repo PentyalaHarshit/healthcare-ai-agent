@@ -201,6 +201,15 @@ class BookRequest(BaseModel):
     slot_id: int
 
 
+class SparkRiskPredictionRequest(BaseModel):
+    age: int = 55
+    chest_pain: bool = False
+    diabetes: bool = False
+    hypertension: bool = False
+    shortness_of_breath: bool = False
+    blood_pressure: int = 120
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Legacy helper functions (used by /analyze and /chat)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -528,6 +537,18 @@ def analytics_hospital_load():
 def analytics_emergency_trends():
     from hospital_analytics import emergency_trends_from_hdfs
     return emergency_trends_from_hdfs()
+
+
+@app.post("/ml/risk/train")
+def ml_train_risk_model():
+    from healthcare_spark_ml import train_risk_model_from_hdfs
+    return train_risk_model_from_hdfs()
+
+
+@app.post("/ml/risk/predict")
+def ml_predict_risk(data: SparkRiskPredictionRequest):
+    from healthcare_spark_ml import predict_risk_with_spark_ml
+    return predict_risk_with_spark_ml(data.dict())
 
 
 # ─────────────────────────────────────────────────────────────────────────────

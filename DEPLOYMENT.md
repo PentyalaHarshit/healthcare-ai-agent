@@ -183,10 +183,10 @@ Open dashboards:
 ```text
 Hospital Analytics: https://your-domain.example.com/hospital-analytics
 HDFS NameNode: http://your-ec2-public-ip:9870
-Spark Master: http://your-ec2-public-ip:8080
+Spark Master: http://your-ec2-public-ip:18080
 ```
 
-For stricter production networking, restrict ports `9870` and `8080` to your IP in the EC2 security group, or remove those public port mappings.
+For stricter production networking, restrict ports `9870` and `18080` to your IP in the EC2 security group, or remove those public port mappings.
 
 Export PostgreSQL operational data to HDFS:
 
@@ -230,6 +230,42 @@ This answers:
 - Most busy doctor
 - Hospital load
 - Emergency trends
+
+## PySpark ML Risk Prediction
+
+Large datasets can be trained through Spark ML after they are exported to HDFS.
+
+Upload the sample patient risk training data:
+
+```bash
+docker cp analytics_samples/patients.csv healthcare_hdfs_namenode:/tmp/patients.csv
+docker compose --env-file .env.production -f docker-compose.prod.yml --profile analytics exec -T namenode hdfs dfs -mkdir -p /healthcare
+docker compose --env-file .env.production -f docker-compose.prod.yml --profile analytics exec -T namenode hdfs dfs -put -f /tmp/patients.csv /healthcare/patients.csv
+```
+
+Train a Spark Random Forest model through the API:
+
+```bash
+curl -X POST https://your-domain.example.com/ml/risk/train
+```
+
+Predict patient risk through the API:
+
+```bash
+curl -X POST https://your-domain.example.com/ml/risk/predict \
+  -H "Content-Type: application/json" \
+  -d '{"age":64,"chest_pain":true,"diabetes":true,"hypertension":true,"shortness_of_breath":true,"blood_pressure":158}'
+```
+
+You can also run the standalone Spark scripts inside the Spark master container:
+
+```bash
+docker cp analytics_samples/spark_train_risk_model.py healthcare_spark_master:/tmp/spark_train_risk_model.py
+docker compose --env-file .env.production -f docker-compose.prod.yml --profile analytics exec -T spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /tmp/spark_train_risk_model.py
+
+docker cp analytics_samples/spark_predict_risk.py healthcare_spark_master:/tmp/spark_predict_risk.py
+docker compose --env-file .env.production -f docker-compose.prod.yml --profile analytics exec -T spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /tmp/spark_predict_risk.py
+```
 
 ## Service Map
 
